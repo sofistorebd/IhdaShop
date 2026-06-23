@@ -138,9 +138,15 @@ export default function OrderForm({ product }) {
                     </span>
                     <span className="flex-1">
                       <span className="block text-sm font-semibold text-ink">
-                        {product.name}
+                        {product.name} — {v.name}
                       </span>
-                      <span className="block text-xs text-gray-500">
+                      <span
+                        className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                          isSel
+                            ? "bg-brand text-white"
+                            : "bg-brand-light text-brand-dark"
+                        }`}
+                      >
                         {v.name}
                       </span>
                     </span>
