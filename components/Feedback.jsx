@@ -75,14 +75,14 @@ export default function Feedback() {
           {feedbackImages.map((src, i) => (
             <div
               key={i}
-              className="w-[260px] shrink-0 snap-start sm:w-[300px]"
+              className="h-[380px] w-[260px] shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm sm:w-[300px]"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={src}
                 alt={`গ্রাহক রিভিউ ${i + 1}`}
                 loading="lazy"
-                className="w-full rounded-2xl border border-gray-100 shadow-sm"
+                className="h-full w-full object-contain object-top"
               />
             </div>
           ))}
