@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { site } from "@/config";
+import { products } from "@/data/products";
 import ProductImage from "./ProductImage";
 
 export default function OrderForm({ product }) {
+  const [slug, setSlug] = useState(product.slug);
+  const selected = useMemo(
+    () => products.find((p) => p.slug === slug) ?? product,
+    [slug, product]
+  );
+
   const [size, setSize] = useState(product.sizes[0]);
   const [color, setColor] = useState(product.colors[0]);
   const [qty, setQty] = useState(1);
@@ -14,16 +21,22 @@ export default function OrderForm({ product }) {
   const [address, setAddress] = useState("");
   const [status, setStatus] = useState("idle"); // idle | sending | success | error
 
+  function chooseProduct(p) {
+    setSlug(p.slug);
+    setSize(p.sizes[0]);
+    setColor(p.colors[0]);
+  }
+
   const deliveryCharge =
     area === "inside" ? site.delivery.insideDhaka : site.delivery.outsideDhaka;
-  const subtotal = product.price * qty;
+  const subtotal = selected.price * qty;
   const total = subtotal + deliveryCharge;
   const bdt = (n) => "৳" + n.toLocaleString("bn-BD");
 
   function buildSummary() {
     return [
       `🛍️ নতুন অর্ডার — ${site.brandName}`,
-      `প্রোডাক্ট: ${product.name}`,
+      `প্রোডাক্ট: ${selected.name}`,
       `সাইজ: ${size} | কালার: ${color}`,
       `পরিমাণ: ${qty}`,
       `ডেলিভারি: ${area === "inside" ? "ঢাকার ভিতরে" : "ঢাকার বাইরে"} (${bdt(
@@ -50,9 +63,9 @@ export default function OrderForm({ product }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          product: product.name,
-          slug: product.slug,
-          price: product.price,
+          product: selected.name,
+          slug: selected.slug,
+          price: selected.price,
           size,
           color,
           qty,
@@ -106,46 +119,93 @@ export default function OrderForm({ product }) {
           onSubmit={handleSubmit}
           className="space-y-5 rounded-3xl bg-white p-6 shadow-lg"
         >
-          {/* নির্বাচিত প্রোডাক্ট */}
-          <div className="flex items-center gap-3 rounded-xl border border-brand bg-brand-light p-3">
-            <span className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white">
-              <ProductImage src={product.image} name={product.name} />
-            </span>
-            <span className="flex-1 text-sm font-semibold text-ink">
-              {product.name}
-            </span>
-            <span className="font-bold text-brand">{bdt(product.price)}</span>
+          {/* প্রোডাক্ট নির্বাচন (সব প্রোডাক্ট) */}
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-gray-700">
+              প্রোডাক্ট নির্বাচন করুন
+            </label>
+            <div className="space-y-2">
+              {products.map((p) => {
+                const isSel = p.slug === slug;
+                return (
+                  <button
+                    type="button"
+                    key={p.slug}
+                    onClick={() => chooseProduct(p)}
+                    className={`flex w-full items-center gap-3 rounded-xl border p-2 text-left transition ${
+                      isSel
+                        ? "border-brand bg-brand-light"
+                        : "border-gray-200 hover:border-brand/50"
+                    }`}
+                  >
+                    <span className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white">
+                      <ProductImage src={p.image} name={p.name} />
+                    </span>
+                    <span className="flex-1">
+                      <span className="block text-sm font-semibold text-ink">
+                        {p.name}
+                      </span>
+                      <span className="block text-xs text-gray-500">
+                        {p.short}
+                      </span>
+                    </span>
+                    <span className="font-bold text-brand">{bdt(p.price)}</span>
+                    <span
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                        isSel ? "border-brand bg-brand text-white" : "border-gray-300"
+                      }`}
+                    >
+                      {isSel && <span className="text-[11px]">✓</span>}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* সাইজ ও কালার */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
-                সাইজ
-              </label>
-              <select
-                value={size}
-                onChange={(e) => setSize(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand"
-              >
-                {product.sizes.map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
+          {/* সাইজ (বাটন) */}
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-gray-700">
+              সাইজ নির্বাচন করুন
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {selected.sizes.map((s) => (
+                <button
+                  type="button"
+                  key={s}
+                  onClick={() => setSize(s)}
+                  className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${
+                    size === s
+                      ? "border-brand bg-brand text-white"
+                      : "border-gray-200 text-gray-700 hover:border-brand"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
             </div>
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
-                কালার
-              </label>
-              <select
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand"
-              >
-                {product.colors.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
+          </div>
+
+          {/* কালার (বাটন) */}
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-gray-700">
+              কালার নির্বাচন করুন
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {selected.colors.map((c) => (
+                <button
+                  type="button"
+                  key={c}
+                  onClick={() => setColor(c)}
+                  className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${
+                    color === c
+                      ? "border-brand bg-brand text-white"
+                      : "border-gray-200 text-gray-700 hover:border-brand"
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -234,7 +294,7 @@ export default function OrderForm({ product }) {
           {/* অর্ডার সামারি */}
           <div className="rounded-xl bg-gray-50 p-4 text-sm">
             <div className="flex justify-between text-gray-600">
-              <span>সাবটোটাল</span>
+              <span>{selected.name} × {qty}</span>
               <span>{bdt(subtotal)}</span>
             </div>
             <div className="mt-1 flex justify-between text-gray-600">
