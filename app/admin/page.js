@@ -1,8 +1,7 @@
 import { listOrders, hasDb } from "@/lib/db";
 import { steadfastReady } from "@/lib/steadfast";
 import OrdersTable from "@/components/admin/OrdersTable";
-import LogoutButton from "@/components/admin/LogoutButton";
-import { site } from "@/config";
+import AdminNav from "@/components/admin/AdminNav";
 
 export const dynamic = "force-dynamic";
 export const metadata = { robots: { index: false, follow: false } };
@@ -28,15 +27,7 @@ export default async function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-ink text-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🧕</span>
-            <span className="font-bold">{site.brandName} — অ্যাডমিন</span>
-          </div>
-          <LogoutButton />
-        </div>
-      </header>
+      <AdminNav active="orders" />
 
       <main className="mx-auto max-w-6xl px-4 py-6">
         {!hasDb() && (

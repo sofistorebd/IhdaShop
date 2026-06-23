@@ -1,7 +1,6 @@
-import { products } from "@/data/products";
 import ProductCard from "./ProductCard";
 
-export default function ProductGrid() {
+export default function ProductGrid({ products = [] }) {
   return (
     <section id="products" className="relative overflow-hidden bg-gray-50">
       {/* aesthetic background শেপ */}

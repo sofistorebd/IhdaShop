@@ -7,8 +7,12 @@ import Feedback from "@/components/Feedback";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { site } from "@/config";
+import { listProducts } from "@/lib/products-db";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const products = await listProducts({ activeOnly: true });
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Store",
@@ -28,7 +32,7 @@ export default function Home() {
       <main className="flex-1">
         <Hero />
         <Features />
-        <ProductGrid />
+        <ProductGrid products={products} />
         <OrderBanner />
         <Feedback />
       </main>

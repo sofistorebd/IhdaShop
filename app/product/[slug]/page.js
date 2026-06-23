@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { products } from "@/data/products";
+import { getProductBySlug } from "@/lib/products-db";
 import { site } from "@/config";
 import Navbar from "@/components/Navbar";
 import ProductDetail from "@/components/ProductDetail";
@@ -9,13 +9,11 @@ import OrderForm from "@/components/OrderForm";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 
-export function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const product = products.find((p) => p.slug === slug);
+  const product = await getProductBySlug(slug);
   if (!product) return {};
   const url = `${site.url.replace(/\/$/, "")}/product/${product.slug}`;
   const desc = `${product.short} — মাত্র ৳${product.price}। ${site.brandName} থেকে অর্ডার করুন।`;
@@ -41,7 +39,7 @@ export async function generateMetadata({ params }) {
 
 export default async function ProductPage({ params }) {
   const { slug } = await params;
-  const product = products.find((p) => p.slug === slug);
+  const product = await getProductBySlug(slug);
   if (!product) notFound();
 
   const base = site.url.replace(/\/$/, "");

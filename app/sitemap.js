@@ -1,9 +1,18 @@
-import { products } from "@/data/products";
+import { listProducts } from "@/lib/products-db";
 import { site } from "@/config";
 
-export default function sitemap() {
+export const dynamic = "force-dynamic";
+
+export default async function sitemap() {
   const now = new Date();
   const base = site.url.replace(/\/$/, "");
+
+  let products = [];
+  try {
+    products = await listProducts({ activeOnly: true });
+  } catch {
+    products = [];
+  }
 
   const productUrls = products.map((p) => ({
     url: `${base}/product/${p.slug}`,
