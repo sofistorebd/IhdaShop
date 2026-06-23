@@ -5,29 +5,26 @@ import { feedbackImages } from "@/data/feedback";
 
 export default function Feedback() {
   const trackRef = useRef(null);
+  const idxRef = useRef(0);
   const pausedRef = useRef(false);
 
-  function scrollBy(dir) {
+  // index ধরে নির্দিষ্ট কার্ডে স্ক্রল করে (snap-friendly, নির্ভরযোগ্য loop)
+  function goTo(idx) {
     const el = trackRef.current;
-    if (!el) return;
-    const amount = el.clientWidth * 0.8;
-    el.scrollBy({ left: dir * amount, behavior: "smooth" });
+    const cards = el?.children;
+    if (!el || !cards || !cards.length) return;
+    const n = cards.length;
+    idxRef.current = ((idx % n) + n) % n;
+    const left = cards[idxRef.current].offsetLeft - cards[0].offsetLeft;
+    el.scrollTo({ left, behavior: "smooth" });
   }
 
-  // অটো-স্লাইড (প্রতি ৩ সেকেন্ডে), হোভার/টাচে থামে
+  // অটো-স্লাইড (প্রতি ৩.৫ সেকেন্ডে), হোভার/টাচে থামে
   useEffect(() => {
-    const el = trackRef.current;
-    if (!el) return;
     const id = setInterval(() => {
       if (pausedRef.current) return;
-      const atEnd =
-        el.scrollLeft + el.clientWidth >= el.scrollWidth - 5;
-      if (atEnd) {
-        el.scrollTo({ left: 0, behavior: "smooth" });
-      } else {
-        el.scrollBy({ left: 300, behavior: "smooth" });
-      }
-    }, 3000);
+      goTo(idxRef.current + 1);
+    }, 3500);
     return () => clearInterval(id);
   }, []);
 
@@ -48,14 +45,14 @@ export default function Feedback() {
           {/* arrow বাটন (ডেস্কটপ) */}
           <div className="hidden shrink-0 gap-2 sm:flex">
             <button
-              onClick={() => scrollBy(-1)}
+              onClick={() => goTo(idxRef.current - 1)}
               aria-label="আগের"
               className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-ink transition hover:bg-brand hover:text-white"
             >
               ‹
             </button>
             <button
-              onClick={() => scrollBy(1)}
+              onClick={() => goTo(idxRef.current + 1)}
               aria-label="পরের"
               className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-ink transition hover:bg-brand hover:text-white"
             >
@@ -70,6 +67,7 @@ export default function Feedback() {
           onMouseEnter={() => (pausedRef.current = true)}
           onMouseLeave={() => (pausedRef.current = false)}
           onTouchStart={() => (pausedRef.current = true)}
+          onTouchEnd={() => setTimeout(() => (pausedRef.current = false), 4000)}
           className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {feedbackImages.map((src, i) => (
