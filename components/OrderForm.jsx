@@ -13,7 +13,6 @@ export default function OrderForm({ product }) {
   );
 
   const [size, setSize] = useState(product.sizes[0]);
-  const [color, setColor] = useState(product.colors[0]);
   const [qty, setQty] = useState(1);
   const [area, setArea] = useState("inside"); // inside | outside
   const [name, setName] = useState("");
@@ -24,7 +23,6 @@ export default function OrderForm({ product }) {
   function chooseProduct(p) {
     setSlug(p.slug);
     setSize(p.sizes[0]);
-    setColor(p.colors[0]);
   }
 
   const deliveryCharge =
@@ -37,7 +35,7 @@ export default function OrderForm({ product }) {
     return [
       `🛍️ নতুন অর্ডার — ${site.brandName}`,
       `প্রোডাক্ট: ${selected.name}`,
-      `সাইজ: ${size} | কালার: ${color}`,
+      `সাইজ: ${size}`,
       `পরিমাণ: ${qty}`,
       `ডেলিভারি: ${area === "inside" ? "ঢাকার ভিতরে" : "ঢাকার বাইরে"} (${bdt(
         deliveryCharge
@@ -67,7 +65,6 @@ export default function OrderForm({ product }) {
           slug: selected.slug,
           price: selected.price,
           size,
-          color,
           qty,
           area: area === "inside" ? "ঢাকার ভিতরে" : "ঢাকার বাইরে",
           deliveryCharge,
@@ -181,29 +178,6 @@ export default function OrderForm({ product }) {
                   }`}
                 >
                   {s}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* কালার (বাটন) */}
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-gray-700">
-              কালার নির্বাচন করুন
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {selected.colors.map((c) => (
-                <button
-                  type="button"
-                  key={c}
-                  onClick={() => setColor(c)}
-                  className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${
-                    color === c
-                      ? "border-brand bg-brand text-white"
-                      : "border-gray-200 text-gray-700 hover:border-brand"
-                  }`}
-                >
-                  {c}
                 </button>
               ))}
             </div>

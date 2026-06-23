@@ -104,7 +104,7 @@ export default function OrdersTable({ initialOrders, steadfastReady }) {
                   <td className="px-4 py-3">
                     <p className="text-gray-700">{o.product}</p>
                     <p className="text-xs text-gray-500">
-                      {o.size} · {o.color} · {o.qty}টি
+                      {o.size} · {o.qty}টি
                     </p>
                     <p className="text-xs text-gray-400">{o.area}</p>
                   </td>
