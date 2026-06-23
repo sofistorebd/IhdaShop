@@ -1,30 +1,69 @@
+"use client";
+
+import { useRef } from "react";
 import { feedbackImages } from "@/data/feedback";
 
 export default function Feedback() {
+  const trackRef = useRef(null);
+
+  function scrollBy(dir) {
+    const el = trackRef.current;
+    if (!el) return;
+    const amount = el.clientWidth * 0.8;
+    el.scrollBy({ left: dir * amount, behavior: "smooth" });
+  }
+
   return (
     <section id="reviews" className="bg-white">
       <div className="mx-auto max-w-6xl px-4 py-14">
-        <div className="mb-3 text-center">
-          <span className="text-sm font-medium text-brand">বিশ্বস্ততা</span>
-          <h2 className="mt-1 text-3xl font-bold text-ink">
-            গ্রাহকের প্রকৃত মতামত
-          </h2>
-          <p className="mt-2 text-sm text-gray-500">
-            আমাদের পেজ, মেসেজ ও কমেন্টে গ্রাহকদের আসল রিভিউ
-          </p>
+        <div className="mb-8 flex items-end justify-between gap-4">
+          <div>
+            <span className="text-sm font-medium text-brand">বিশ্বস্ততা</span>
+            <h2 className="mt-1 text-3xl font-bold text-ink">
+              গ্রাহকের প্রকৃত মতামত
+            </h2>
+            <p className="mt-2 text-sm text-gray-500">
+              আমাদের পেজ, মেসেজ ও কমেন্টে গ্রাহকদের আসল রিভিউ
+            </p>
+          </div>
+
+          {/* arrow বাটন (ডেস্কটপ) */}
+          <div className="hidden shrink-0 gap-2 sm:flex">
+            <button
+              onClick={() => scrollBy(-1)}
+              aria-label="আগের"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-ink transition hover:bg-brand hover:text-white"
+            >
+              ‹
+            </button>
+            <button
+              onClick={() => scrollBy(1)}
+              aria-label="পরের"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-ink transition hover:bg-brand hover:text-white"
+            >
+              ›
+            </button>
+          </div>
         </div>
 
-        {/* masonry-style স্ক্রিনশট গ্যালারি */}
-        <div className="mt-8 columns-1 gap-4 sm:columns-2 lg:columns-3 [&>*]:mb-4">
+        {/* single-row slider */}
+        <div
+          ref={trackRef}
+          className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           {feedbackImages.map((src, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <div
               key={i}
-              src={src}
-              alt={`গ্রাহক রিভিউ ${i + 1}`}
-              loading="lazy"
-              className="w-full break-inside-avoid rounded-2xl border border-gray-100 shadow-sm"
-            />
+              className="w-[260px] shrink-0 snap-start sm:w-[300px]"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={src}
+                alt={`গ্রাহক রিভিউ ${i + 1}`}
+                loading="lazy"
+                className="w-full rounded-2xl border border-gray-100 shadow-sm"
+              />
+            </div>
           ))}
         </div>
       </div>
