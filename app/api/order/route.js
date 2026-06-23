@@ -1,5 +1,6 @@
-// অর্ডার গ্রহণ করে Google Sheet এ পাঠায় (এবং চাইলে ইমেইল)।
-// সেটআপ: .env.local এ GOOGLE_SHEET_WEBHOOK_URL দাও (নিচে README দেখো)।
+// অর্ডার গ্রহণ → DB তে সেভ → Telegram এ নোটিফিকেশন
+import { createOrder, hasDb } from "@/lib/db";
+import { sendTelegram, formatOrder } from "@/lib/telegram";
 
 export async function POST(req) {
   let data;
@@ -9,29 +10,31 @@ export async function POST(req) {
     return Response.json({ ok: false, error: "invalid json" }, { status: 400 });
   }
 
-  // বেসিক ভ্যালিডেশন
   if (!data?.name || !data?.phone || !data?.address) {
-    return Response.json({ ok: false, error: "missing fields" }, { status: 400 });
+    return Response.json(
+      { ok: false, error: "missing fields" },
+      { status: 400 }
+    );
   }
 
-  const webhook = process.env.GOOGLE_SHEET_WEBHOOK_URL;
-
-  // Google Sheet webhook সেট করা না থাকলেও dev এ কাজ করবে (শুধু লগ হবে)
-  if (!webhook) {
-    console.log("📦 নতুন অর্ডার (webhook সেট করা নেই):", data);
-    return Response.json({ ok: true, saved: false });
-  }
-
+  let saved = data;
   try {
-    const res = await fetch(webhook, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error("sheet webhook failed");
-    return Response.json({ ok: true, saved: true });
+    if (hasDb()) {
+      saved = await createOrder(data); // DB row (id সহ)
+    } else {
+      console.log("📦 নতুন অর্ডার (DB সেট করা নেই):", data);
+    }
   } catch (err) {
-    console.error("অর্ডার সেভ ব্যর্থ:", err);
-    return Response.json({ ok: false, error: "save failed" }, { status: 500 });
+    console.error("DB সেভ ব্যর্থ:", err);
+    // DB ব্যর্থ হলেও Telegram পাঠানোর চেষ্টা করি
   }
+
+  // Telegram নোটিফিকেশন
+  try {
+    await sendTelegram(formatOrder({ ...data, ...saved }));
+  } catch (err) {
+    console.error("Telegram ব্যর্থ:", err);
+  }
+
+  return Response.json({ ok: true, id: saved?.id ?? null });
 }

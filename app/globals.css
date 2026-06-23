@@ -1,16 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand: #1b6e3c;
-  --color-brand-dark: #14532d;
-  --color-brand-light: #e8f3ec;
-  --color-accent: #dc2626;
+  /* পিংক / কালো / সাদা থিম */
+  --color-brand: #e23a7a;        /* মূল পিংক */
+  --color-brand-dark: #be185d;   /* গাঢ় পিংক */
+  --color-brand-light: #fce7f1;  /* হালকা পিংক */
+  --color-ink: #111111;          /* কালো */
+  --color-ink-soft: #2a2a2a;
+  --color-accent: #e23a7a;
   --font-bangla: var(--font-bangla);
 }
 
 :root {
   --background: #ffffff;
-  --foreground: #1f2937;
+  --foreground: #1a1a1a;
 }
 
 body {
@@ -19,7 +22,6 @@ body {
   font-family: var(--font-bangla), "Segoe UI", system-ui, sans-serif;
 }
 
-/* হালকা scroll-behavior যাতে "অর্ডার করুন" বাটনে স্মুথ স্ক্রল হয় */
 html {
   scroll-behavior: smooth;
 }

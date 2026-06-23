@@ -1,39 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { products } from "@/data/products";
+import { useState } from "react";
 import { site } from "@/config";
-import ProductImage from "./ProductImage";
 
-export default function OrderForm() {
-  const [slug, setSlug] = useState(products[0].slug);
-  const [size, setSize] = useState(products[0].sizes[0]);
-  const [color, setColor] = useState(products[0].colors[0]);
+export default function OrderForm({ product }) {
+  const [size, setSize] = useState(product.sizes[0]);
+  const [color, setColor] = useState(product.colors[0]);
   const [qty, setQty] = useState(1);
   const [area, setArea] = useState("inside"); // inside | outside
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [status, setStatus] = useState("idle"); // idle | sending | success | error
-
-  const product = useMemo(
-    () => products.find((p) => p.slug === slug) ?? products[0],
-    [slug]
-  );
-
-  // প্রোডাক্ট কার্ডের "অর্ডার করুন" বাটন থেকে সিলেক্ট হবে
-  useEffect(() => {
-    function onSelect(e) {
-      const next = products.find((p) => p.slug === e.detail);
-      if (next) {
-        setSlug(next.slug);
-        setSize(next.sizes[0]);
-        setColor(next.colors[0]);
-      }
-    }
-    window.addEventListener("select-product", onSelect);
-    return () => window.removeEventListener("select-product", onSelect);
-  }, []);
 
   const deliveryCharge =
     area === "inside" ? site.delivery.insideDhaka : site.delivery.outsideDhaka;
@@ -72,6 +50,7 @@ export default function OrderForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           product: product.name,
+          slug: product.slug,
           price: product.price,
           size,
           color,
@@ -82,7 +61,6 @@ export default function OrderForm() {
           name,
           phone,
           address,
-          time: new Date().toISOString(),
         }),
       });
       if (!res.ok) throw new Error("failed");
@@ -99,25 +77,11 @@ export default function OrderForm() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-brand text-3xl text-white">
             ✓
           </div>
-          <h2 className="text-2xl font-bold text-brand-dark">
-            অর্ডার সফল হয়েছে!
-          </h2>
+          <h2 className="text-2xl font-bold text-ink">অর্ডার সফল হয়েছে!</h2>
           <p className="mt-2 text-gray-600">
             ধন্যবাদ {name}! আমরা শীঘ্রই {phone} নাম্বারে কল করে অর্ডার কনফার্ম
             করব।
           </p>
-          <button
-            onClick={() => {
-              setStatus("idle");
-              setName("");
-              setPhone("");
-              setAddress("");
-              setQty(1);
-            }}
-            className="mt-6 rounded-full bg-brand px-6 py-2.5 font-semibold text-white hover:bg-brand-dark"
-          >
-            আরেকটি অর্ডার করুন
-          </button>
         </div>
       </section>
     );
@@ -128,7 +92,7 @@ export default function OrderForm() {
       <div className="mx-auto max-w-2xl px-4 py-14">
         <div className="mb-8 text-center">
           <span className="text-sm font-medium text-brand">সহজ অর্ডার</span>
-          <h2 className="mt-1 text-3xl font-bold text-brand-dark">
+          <h2 className="mt-1 text-3xl font-bold text-ink">
             নিচের ফর্মটি পূরণ করুন
           </h2>
         </div>
@@ -137,44 +101,15 @@ export default function OrderForm() {
           onSubmit={handleSubmit}
           className="space-y-5 rounded-3xl bg-white p-6 shadow-lg"
         >
-          {/* প্রোডাক্ট সিলেক্ট */}
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-gray-700">
-              প্রোডাক্ট বাছাই করুন
-            </label>
-            <div className="space-y-2">
-              {products.map((p) => (
-                <label
-                  key={p.slug}
-                  className={`flex cursor-pointer items-center gap-3 rounded-xl border p-2.5 transition ${
-                    slug === p.slug
-                      ? "border-brand bg-brand-light"
-                      : "border-gray-200 hover:border-brand/50"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="product"
-                    className="accent-brand"
-                    checked={slug === p.slug}
-                    onChange={() => {
-                      setSlug(p.slug);
-                      setSize(p.sizes[0]);
-                      setColor(p.colors[0]);
-                    }}
-                  />
-                  <span className="h-12 w-12 overflow-hidden rounded-lg">
-                    <ProductImage src={p.image} name={p.name} />
-                  </span>
-                  <span className="flex-1 text-sm font-medium text-gray-700">
-                    {p.name}
-                  </span>
-                  <span className="font-semibold text-accent">
-                    {bdt(p.price)}
-                  </span>
-                </label>
-              ))}
-            </div>
+          {/* নির্বাচিত প্রোডাক্ট */}
+          <div className="flex items-center gap-3 rounded-xl border border-brand bg-brand-light p-3">
+            <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-white text-2xl">
+              🧕
+            </span>
+            <span className="flex-1 text-sm font-semibold text-ink">
+              {product.name}
+            </span>
+            <span className="font-bold text-brand">{bdt(product.price)}</span>
           </div>
 
           {/* সাইজ ও কালার */}
@@ -244,7 +179,7 @@ export default function OrderForm() {
                 onClick={() => setArea("inside")}
                 className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
                   area === "inside"
-                    ? "border-brand bg-brand-light text-brand-dark"
+                    ? "border-brand bg-brand-light text-ink"
                     : "border-gray-200 text-gray-600"
                 }`}
               >
@@ -255,7 +190,7 @@ export default function OrderForm() {
                 onClick={() => setArea("outside")}
                 className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
                   area === "outside"
-                    ? "border-brand bg-brand-light text-brand-dark"
+                    ? "border-brand bg-brand-light text-ink"
                     : "border-gray-200 text-gray-600"
                 }`}
               >
@@ -301,14 +236,14 @@ export default function OrderForm() {
               <span>ডেলিভারি চার্জ</span>
               <span>{bdt(deliveryCharge)}</span>
             </div>
-            <div className="mt-2 flex justify-between border-t border-gray-200 pt-2 text-base font-bold text-brand-dark">
+            <div className="mt-2 flex justify-between border-t border-gray-200 pt-2 text-base font-bold text-ink">
               <span>সর্বমোট</span>
               <span>{bdt(total)}</span>
             </div>
           </div>
 
           {status === "error" && (
-            <p className="text-center text-sm text-accent">
+            <p className="text-center text-sm text-brand">
               দুঃখিত, সমস্যা হয়েছে। অনুগ্রহ করে WhatsApp এ অর্ডার করুন।
             </p>
           )}

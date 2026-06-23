@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="240" viewBox="0 0 360 240" font-family="'Hind Siliguri','Segoe UI',sans-serif">
+  <rect width="360" height="240" fill="#fff6fa"/>
+  <rect x="0" y="0" width="6" height="240" fill="#e23a7a"/>
+  <text x="30" y="50" font-size="40" fill="#e23a7a" opacity="0.25">"</text>
+  <text x="28" y="86" font-size="14" fill="#333">মাশাআল্লাহ! এমন প্রিমিয়াম বোরকা</text>
+  <text x="28" y="110" font-size="14" fill="#333">এই বাজেটে পাওয়া যায় ভাবিনি।</text>
+  <text x="28" y="134" font-size="14" fill="#333">নিকাব আর হিজাবের ফিনিশিং দারুণ।</text>
+  <text x="28" y="158" font-size="14" fill="#333">পুরো পরিবার খুশি 🥰</text>
+  <line x1="28" y1="178" x2="332" y2="178" stroke="#f0d4e0"/>
+  <circle cx="44" cy="206" r="16" fill="#111"/>
+  <text x="44" y="212" font-size="15" text-anchor="middle" fill="#fff">K</text>
+  <text x="70" y="202" font-size="13" font-weight="700" fill="#111">Khadija Begum</text>
+  <text x="70" y="220" font-size="14" fill="#f5a623">★★★★★</text>
+</svg>

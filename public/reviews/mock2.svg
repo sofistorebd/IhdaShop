@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="300" viewBox="0 0 360 300" font-family="'Hind Siliguri','Segoe UI',sans-serif">
+  <rect width="360" height="300" fill="#ffffff"/>
+  <rect width="360" height="300" fill="none" stroke="#eee"/>
+  <!-- comment 1 -->
+  <circle cx="32" cy="36" r="18" fill="#e23a7a"/>
+  <text x="32" y="42" font-size="16" text-anchor="middle" fill="#fff">S</text>
+  <rect x="58" y="20" width="284" height="64" rx="14" fill="#f0f2f5"/>
+  <text x="72" y="40" font-size="13" font-weight="700" fill="#050505">Sumaiya Islam</text>
+  <text x="72" y="60" font-size="12.5" fill="#222">ডেলিভারি অনেক দ্রুত পেয়েছি।</text>
+  <text x="72" y="77" font-size="12.5" fill="#222">সাইজও একদম ঠিক ছিল 👌</text>
+  <text x="72" y="100" font-size="11" fill="#65676b">Like · Reply · 2d</text>
+  <text x="270" y="100" font-size="11" fill="#65676b">👍❤️ 42</text>
+  <!-- comment 2 -->
+  <circle cx="32" cy="156" r="18" fill="#111"/>
+  <text x="32" y="162" font-size="16" text-anchor="middle" fill="#fff">N</text>
+  <rect x="58" y="140" width="284" height="64" rx="14" fill="#f0f2f5"/>
+  <text x="72" y="160" font-size="13" font-weight="700" fill="#050505">Nusrat Jahan</text>
+  <text x="72" y="180" font-size="12.5" fill="#222">এই দামে এত সুন্দর ডিজাইন!</text>
+  <text x="72" y="197" font-size="12.5" fill="#222">সবাইকে রিকমেন্ড করছি ⭐⭐⭐⭐⭐</text>
+  <text x="72" y="220" font-size="11" fill="#65676b">Like · Reply · 1d</text>
+  <text x="270" y="220" font-size="11" fill="#65676b">❤️ 28</text>
+  <!-- comment 3 -->
+  <circle cx="32" cy="262" r="18" fill="#e23a7a"/>
+  <text x="32" y="268" font-size="16" text-anchor="middle" fill="#fff">R</text>
+  <rect x="58" y="248" width="284" height="40" rx="14" fill="#f0f2f5"/>
+  <text x="72" y="266" font-size="13" font-weight="700" fill="#050505">Rima Akter</text>
+  <text x="72" y="283" font-size="12.5" fill="#222">মাশাআল্লাহ, খুব সুন্দর 😍</text>
+</svg>

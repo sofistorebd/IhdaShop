@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="430" viewBox="0 0 360 430" font-family="'Hind Siliguri','Segoe UI',sans-serif">
+  <rect width="360" height="430" fill="#ffffff"/>
+  <rect width="360" height="56" fill="#e23a7a"/>
+  <circle cx="34" cy="28" r="16" fill="#ffffff"/>
+  <text x="34" y="34" font-size="16" text-anchor="middle" fill="#e23a7a">F</text>
+  <text x="60" y="25" font-size="14" font-weight="700" fill="#ffffff">Fatema Akter</text>
+  <text x="60" y="42" font-size="11" fill="#ffe3ee">Active now</text>
+  <!-- incoming -->
+  <rect x="16" y="78" width="220" height="44" rx="18" fill="#eceff1"/>
+  <text x="30" y="98" font-size="13" fill="#222">আসসালামু আলাইকুম, বোরকা টা</text>
+  <text x="30" y="115" font-size="13" fill="#222">পেয়েছি আপু 😍</text>
+  <rect x="16" y="132" width="240" height="44" rx="18" fill="#eceff1"/>
+  <text x="30" y="152" font-size="13" fill="#222">কাপড়ের মান অসাধারণ! এত ভালো</text>
+  <text x="30" y="169" font-size="13" fill="#222">কোয়ালিটি আশা করিনি।</text>
+  <!-- outgoing -->
+  <rect x="150" y="190" width="194" height="40" rx="18" fill="#e23a7a"/>
+  <text x="332" y="214" font-size="13" fill="#ffffff" text-anchor="end">ধন্যবাদ আপু ❤️</text>
+  <!-- incoming -->
+  <rect x="16" y="244" width="250" height="44" rx="18" fill="#eceff1"/>
+  <text x="30" y="264" font-size="13" fill="#222">আবার অর্ডার করব ইনশাআল্লাহ।</text>
+  <text x="30" y="281" font-size="13" fill="#222">৫ স্টার রিভিউ দিয়ে দিলাম ⭐</text>
+  <rect x="16" y="300" width="170" height="40" rx="18" fill="#eceff1"/>
+  <text x="30" y="324" font-size="15" fill="#222">⭐⭐⭐⭐⭐</text>
+  <!-- input bar -->
+  <rect x="16" y="372" width="328" height="40" rx="20" fill="#f2f3f5"/>
+  <text x="32" y="397" font-size="13" fill="#9aa0a6">Aa</text>
+  <text x="320" y="398" font-size="16" fill="#e23a7a" text-anchor="end">➤</text>
+</svg>

@@ -2,8 +2,7 @@ import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
 import ProductGrid from "@/components/ProductGrid";
-import Reviews from "@/components/Reviews";
-import OrderForm from "@/components/OrderForm";
+import Feedback from "@/components/Feedback";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 
@@ -15,8 +14,7 @@ export default function Home() {
         <Hero />
         <Features />
         <ProductGrid />
-        <Reviews />
-        <OrderForm />
+        <Feedback />
       </main>
       <Footer />
       <WhatsAppFloat />

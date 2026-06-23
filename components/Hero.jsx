@@ -12,14 +12,14 @@ export default function Hero() {
           <span className="inline-block rounded-full bg-brand/10 px-4 py-1 text-sm font-medium text-brand">
             প্রিমিয়াম মডেস্ট কালেকশন
           </span>
-          <h1 className="mt-4 text-4xl font-bold leading-tight text-brand-dark md:text-5xl">
+          <h1 className="mt-4 text-4xl font-bold leading-tight text-ink md:text-5xl">
             {site.tagline}
           </h1>
           <p className="mt-4 max-w-md text-gray-600">{site.description}</p>
 
           <div className="mt-7 flex flex-wrap gap-3">
             <a
-              href="#order"
+              href="#products"
               className="rounded-full bg-brand px-7 py-3 font-semibold text-white shadow-md transition hover:bg-brand-dark"
             >
               এখনই অর্ডার করুন
@@ -44,7 +44,7 @@ export default function Hero() {
             <span className="text-8xl">🧕</span>
           </div>
           <div className="absolute bottom-4 left-4 rounded-xl bg-white px-4 py-3 shadow-lg">
-            <p className="text-sm font-semibold text-brand-dark">দারুণ মান!</p>
+            <p className="text-sm font-semibold text-ink">দারুণ মান!</p>
             <p className="text-xs text-gray-500">যাচাইকৃত ক্রেতা</p>
             <p className="text-accent">★★★★★</p>
           </div>
