@@ -25,8 +25,8 @@ export const site = {
   ],
 
   // যোগাযোগ
-  phone: "01XXXXXXXXX", // <-- তোমার ফোন নাম্বার দাও
-  whatsapp: "8801XXXXXXXXX", // <-- WhatsApp নাম্বার (country code সহ, + ছাড়া)
+  phone: "01813767615", // <-- তোমার ফোন নাম্বার দাও
+  whatsapp: "8801813767615", // <-- WhatsApp নাম্বার (country code সহ, + ছাড়া)
   email: "ihdashop@example.com",
   facebook: "https://facebook.com/",
   instagram: "https://instagram.com/",
