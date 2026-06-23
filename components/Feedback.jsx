@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { feedbackImages } from "@/data/feedback";
 
 export default function Feedback() {
   const trackRef = useRef(null);
+  const pausedRef = useRef(false);
 
   function scrollBy(dir) {
     const el = trackRef.current;
@@ -12,6 +13,23 @@ export default function Feedback() {
     const amount = el.clientWidth * 0.8;
     el.scrollBy({ left: dir * amount, behavior: "smooth" });
   }
+
+  // অটো-স্লাইড (প্রতি ৩ সেকেন্ডে), হোভার/টাচে থামে
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const id = setInterval(() => {
+      if (pausedRef.current) return;
+      const atEnd =
+        el.scrollLeft + el.clientWidth >= el.scrollWidth - 5;
+      if (atEnd) {
+        el.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        el.scrollBy({ left: 300, behavior: "smooth" });
+      }
+    }, 3000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <section id="reviews" className="bg-white">
@@ -49,6 +67,9 @@ export default function Feedback() {
         {/* single-row slider */}
         <div
           ref={trackRef}
+          onMouseEnter={() => (pausedRef.current = true)}
+          onMouseLeave={() => (pausedRef.current = false)}
+          onTouchStart={() => (pausedRef.current = true)}
           className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {feedbackImages.map((src, i) => (
