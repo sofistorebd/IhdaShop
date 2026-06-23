@@ -88,8 +88,12 @@ export default function OrderForm({ product }) {
   }
 
   return (
-    <section id="order" className="bg-brand-light">
-      <div className="mx-auto max-w-2xl px-4 py-14">
+    <section id="order" className="relative overflow-hidden bg-brand-light">
+      {/* aesthetic background শেপ */}
+      <div className="pointer-events-none absolute -left-16 top-10 h-60 w-60 rounded-full bg-brand/15 blur-3xl" />
+      <div className="pointer-events-none absolute -right-16 bottom-10 h-72 w-72 rounded-full bg-brand/15 blur-3xl" />
+
+      <div className="relative mx-auto max-w-2xl px-4 py-14">
         <div className="mb-8 text-center">
           <span className="text-sm font-medium text-brand">সহজ অর্ডার</span>
           <h2 className="mt-1 text-3xl font-bold text-ink">

@@ -6,7 +6,12 @@ export default function Hero() {
       id="top"
       className="relative overflow-hidden bg-gradient-to-b from-brand-light to-white"
     >
-      <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 md:grid-cols-2 md:py-20">
+      {/* aesthetic background শেপ */}
+      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand/20 blur-3xl" />
+      <div className="pointer-events-none absolute right-[-60px] top-32 h-80 w-80 rounded-full bg-brand/10 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 left-1/3 h-40 w-40 rounded-full bg-brand/10 blur-2xl" />
+
+      <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 md:grid-cols-2 md:py-20">
         {/* বাম পাশ — টেক্সট */}
         <div>
           <span className="inline-block rounded-full bg-brand/10 px-4 py-1 text-sm font-medium text-brand">
