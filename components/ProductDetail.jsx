@@ -1,23 +1,33 @@
+"use client";
+
+import { useState } from "react";
 import ProductImage from "./ProductImage";
 
 export default function ProductDetail({ product }) {
+  const gallery =
+    product.images && product.images.length ? product.images : [product.image];
+  const [active, setActive] = useState(gallery[0]);
   const bdt = (n) => "৳" + n.toLocaleString("bn-BD");
+
   return (
     <section className="bg-white">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-2 md:py-14">
         {/* গ্যালারি */}
         <div>
           <div className="aspect-square overflow-hidden rounded-3xl border border-gray-100 shadow-sm">
-            <ProductImage src={product.image} name={product.name} />
+            <ProductImage src={active} name={product.name} />
           </div>
-          <div className="mt-3 grid grid-cols-4 gap-2">
-            {[0, 1, 2, 3].map((i) => (
-              <div
+          <div className="mt-3 grid grid-cols-5 gap-2">
+            {gallery.map((img, i) => (
+              <button
                 key={i}
-                className="aspect-square overflow-hidden rounded-xl border border-gray-100"
+                onClick={() => setActive(img)}
+                className={`aspect-square overflow-hidden rounded-xl border-2 transition ${
+                  active === img ? "border-brand" : "border-gray-100"
+                }`}
               >
-                <ProductImage src={product.image} name="" />
-              </div>
+                <ProductImage src={img} name="" />
+              </button>
             ))}
           </div>
         </div>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { site } from "@/config";
+import ProductImage from "./ProductImage";
 
 export default function OrderForm({ product }) {
   const [size, setSize] = useState(product.sizes[0]);
@@ -107,8 +108,8 @@ export default function OrderForm({ product }) {
         >
           {/* নির্বাচিত প্রোডাক্ট */}
           <div className="flex items-center gap-3 rounded-xl border border-brand bg-brand-light p-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-white text-2xl">
-              🧕
+            <span className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white">
+              <ProductImage src={product.image} name={product.name} />
             </span>
             <span className="flex-1 text-sm font-semibold text-ink">
               {product.name}
