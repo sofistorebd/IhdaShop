@@ -30,7 +30,7 @@ export default async function Home() {
       />
       <Navbar />
       <main className="flex-1">
-        <Hero />
+        <Hero products={products} />
         <Features />
         <ProductGrid products={products} />
         <OrderBanner />
