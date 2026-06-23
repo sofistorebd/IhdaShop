@@ -1,0 +1,335 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { products } from "@/data/products";
+import { site } from "@/config";
+import ProductImage from "./ProductImage";
+
+export default function OrderForm() {
+  const [slug, setSlug] = useState(products[0].slug);
+  const [size, setSize] = useState(products[0].sizes[0]);
+  const [color, setColor] = useState(products[0].colors[0]);
+  const [qty, setQty] = useState(1);
+  const [area, setArea] = useState("inside"); // inside | outside
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [status, setStatus] = useState("idle"); // idle | sending | success | error
+
+  const product = useMemo(
+    () => products.find((p) => p.slug === slug) ?? products[0],
+    [slug]
+  );
+
+  // প্রোডাক্ট কার্ডের "অর্ডার করুন" বাটন থেকে সিলেক্ট হবে
+  useEffect(() => {
+    function onSelect(e) {
+      const next = products.find((p) => p.slug === e.detail);
+      if (next) {
+        setSlug(next.slug);
+        setSize(next.sizes[0]);
+        setColor(next.colors[0]);
+      }
+    }
+    window.addEventListener("select-product", onSelect);
+    return () => window.removeEventListener("select-product", onSelect);
+  }, []);
+
+  const deliveryCharge =
+    area === "inside" ? site.delivery.insideDhaka : site.delivery.outsideDhaka;
+  const subtotal = product.price * qty;
+  const total = subtotal + deliveryCharge;
+  const bdt = (n) => "৳" + n.toLocaleString("bn-BD");
+
+  function buildSummary() {
+    return [
+      `🛍️ নতুন অর্ডার — ${site.brandName}`,
+      `প্রোডাক্ট: ${product.name}`,
+      `সাইজ: ${size} | কালার: ${color}`,
+      `পরিমাণ: ${qty}`,
+      `ডেলিভারি: ${area === "inside" ? "ঢাকার ভিতরে" : "ঢাকার বাইরে"} (${bdt(
+        deliveryCharge
+      )})`,
+      `মোট: ${bdt(total)}`,
+      `নাম: ${name}`,
+      `ফোন: ${phone}`,
+      `ঠিকানা: ${address}`,
+    ].join("\n");
+  }
+
+  function orderViaWhatsApp() {
+    const msg = encodeURIComponent(buildSummary());
+    window.open(`https://wa.me/${site.whatsapp}?text=${msg}`, "_blank");
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!name || !phone || !address) return;
+    setStatus("sending");
+    try {
+      const res = await fetch("/api/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product: product.name,
+          price: product.price,
+          size,
+          color,
+          qty,
+          area: area === "inside" ? "ঢাকার ভিতরে" : "ঢাকার বাইরে",
+          deliveryCharge,
+          total,
+          name,
+          phone,
+          address,
+          time: new Date().toISOString(),
+        }),
+      });
+      if (!res.ok) throw new Error("failed");
+      setStatus("success");
+    } catch {
+      setStatus("error");
+    }
+  }
+
+  if (status === "success") {
+    return (
+      <section id="order" className="bg-brand-light">
+        <div className="mx-auto max-w-md px-4 py-20 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-brand text-3xl text-white">
+            ✓
+          </div>
+          <h2 className="text-2xl font-bold text-brand-dark">
+            অর্ডার সফল হয়েছে!
+          </h2>
+          <p className="mt-2 text-gray-600">
+            ধন্যবাদ {name}! আমরা শীঘ্রই {phone} নাম্বারে কল করে অর্ডার কনফার্ম
+            করব।
+          </p>
+          <button
+            onClick={() => {
+              setStatus("idle");
+              setName("");
+              setPhone("");
+              setAddress("");
+              setQty(1);
+            }}
+            className="mt-6 rounded-full bg-brand px-6 py-2.5 font-semibold text-white hover:bg-brand-dark"
+          >
+            আরেকটি অর্ডার করুন
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section id="order" className="bg-brand-light">
+      <div className="mx-auto max-w-2xl px-4 py-14">
+        <div className="mb-8 text-center">
+          <span className="text-sm font-medium text-brand">সহজ অর্ডার</span>
+          <h2 className="mt-1 text-3xl font-bold text-brand-dark">
+            নিচের ফর্মটি পূরণ করুন
+          </h2>
+        </div>
+
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-5 rounded-3xl bg-white p-6 shadow-lg"
+        >
+          {/* প্রোডাক্ট সিলেক্ট */}
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-gray-700">
+              প্রোডাক্ট বাছাই করুন
+            </label>
+            <div className="space-y-2">
+              {products.map((p) => (
+                <label
+                  key={p.slug}
+                  className={`flex cursor-pointer items-center gap-3 rounded-xl border p-2.5 transition ${
+                    slug === p.slug
+                      ? "border-brand bg-brand-light"
+                      : "border-gray-200 hover:border-brand/50"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="product"
+                    className="accent-brand"
+                    checked={slug === p.slug}
+                    onChange={() => {
+                      setSlug(p.slug);
+                      setSize(p.sizes[0]);
+                      setColor(p.colors[0]);
+                    }}
+                  />
+                  <span className="h-12 w-12 overflow-hidden rounded-lg">
+                    <ProductImage src={p.image} name={p.name} />
+                  </span>
+                  <span className="flex-1 text-sm font-medium text-gray-700">
+                    {p.name}
+                  </span>
+                  <span className="font-semibold text-accent">
+                    {bdt(p.price)}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* সাইজ ও কালার */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">
+                সাইজ
+              </label>
+              <select
+                value={size}
+                onChange={(e) => setSize(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand"
+              >
+                {product.sizes.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">
+                কালার
+              </label>
+              <select
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand"
+              >
+                {product.colors.map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* পরিমাণ */}
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-gray-700">
+              পরিমাণ
+            </label>
+            <div className="inline-flex items-center rounded-xl border border-gray-200">
+              <button
+                type="button"
+                onClick={() => setQty((q) => Math.max(1, q - 1))}
+                className="px-4 py-2 text-lg text-brand"
+              >
+                −
+              </button>
+              <span className="w-10 text-center font-semibold">{qty}</span>
+              <button
+                type="button"
+                onClick={() => setQty((q) => q + 1)}
+                className="px-4 py-2 text-lg text-brand"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          {/* ডেলিভারি এরিয়া */}
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-gray-700">
+              ডেলিভারি এলাকা
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setArea("inside")}
+                className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
+                  area === "inside"
+                    ? "border-brand bg-brand-light text-brand-dark"
+                    : "border-gray-200 text-gray-600"
+                }`}
+              >
+                ঢাকার ভিতরে ({bdt(site.delivery.insideDhaka)})
+              </button>
+              <button
+                type="button"
+                onClick={() => setArea("outside")}
+                className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
+                  area === "outside"
+                    ? "border-brand bg-brand-light text-brand-dark"
+                    : "border-gray-200 text-gray-600"
+                }`}
+              >
+                ঢাকার বাইরে ({bdt(site.delivery.outsideDhaka)})
+              </button>
+            </div>
+          </div>
+
+          {/* কাস্টমার তথ্য */}
+          <div className="space-y-3">
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="আপনার নাম"
+              required
+              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand"
+            />
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="মোবাইল নাম্বার"
+              required
+              inputMode="tel"
+              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand"
+            />
+            <textarea
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="সম্পূর্ণ ঠিকানা (গ্রাম/বাসা, থানা, জেলা)"
+              required
+              rows={3}
+              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand"
+            />
+          </div>
+
+          {/* অর্ডার সামারি */}
+          <div className="rounded-xl bg-gray-50 p-4 text-sm">
+            <div className="flex justify-between text-gray-600">
+              <span>সাবটোটাল</span>
+              <span>{bdt(subtotal)}</span>
+            </div>
+            <div className="mt-1 flex justify-between text-gray-600">
+              <span>ডেলিভারি চার্জ</span>
+              <span>{bdt(deliveryCharge)}</span>
+            </div>
+            <div className="mt-2 flex justify-between border-t border-gray-200 pt-2 text-base font-bold text-brand-dark">
+              <span>সর্বমোট</span>
+              <span>{bdt(total)}</span>
+            </div>
+          </div>
+
+          {status === "error" && (
+            <p className="text-center text-sm text-accent">
+              দুঃখিত, সমস্যা হয়েছে। অনুগ্রহ করে WhatsApp এ অর্ডার করুন।
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={status === "sending"}
+            className="w-full rounded-full bg-brand py-3.5 text-base font-bold text-white shadow-md transition hover:bg-brand-dark disabled:opacity-60"
+          >
+            {status === "sending" ? "পাঠানো হচ্ছে..." : "অর্ডার কনফার্ম করুন"}
+          </button>
+
+          <button
+            type="button"
+            onClick={orderViaWhatsApp}
+            className="flex w-full items-center justify-center gap-2 rounded-full border border-green-500 py-3 text-base font-semibold text-green-600 transition hover:bg-green-50"
+          >
+            <span>📱</span> WhatsApp এ অর্ডার করুন
+          </button>
+        </form>
+      </div>
+    </section>
+  );
+}

@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# IHDA Shop 🧕
 
-## Getting Started
+Next.js + Tailwind দিয়ে তৈরি একটি single landing page অর্ডার সাইট (বোরকা/হিজাব/নিকাব)।
+বৈশিষ্ট্য: প্রোডাক্ট গ্রিড, অর্ডার ফর্ম (Cash on Delivery), WhatsApp অর্ডার, Google Sheet এ অর্ডার সংরক্ষণ।
 
-First, run the development server:
+---
+
+## 🚀 লোকালি চালানো
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ব্রাউজারে খোলো: http://localhost:3000
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## ✏️ সাইট edit করা (কোডিং না জানলেও পারবে)
 
-## Learn More
+| কী বদলাবে | কোন ফাইল |
+| --- | --- |
+| ব্র্যান্ডের নাম, ফোন, WhatsApp, ডেলিভারি চার্জ | `config.js` |
+| প্রোডাক্ট, দাম, সাইজ, কালার | `data/products.js` |
+| রিভিউ/মতামত | `components/Reviews.jsx` |
+| রঙ (সবুজ থিম) | `app/globals.css` (`--color-brand`) |
 
-To learn more about Next.js, take a look at the following resources:
+### প্রোডাক্টের ছবি যোগ করা
+1. ছবি রাখো `public/products/` ফোল্ডারে (যেমন `safa.jpg`)
+2. `data/products.js` এ ওই প্রোডাক্টে লেখো: `image: "/products/safa.jpg"`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+ছবি না দিলে সুন্দর placeholder এমনিতেই দেখাবে।
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 📦 অর্ডার Google Sheet এ পাঠানো
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. একটা Google Sheet খোলো।
+2. উপরে **Extensions → Apps Script** এ যাও, এই কোড বসাও:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   ```js
+   function doPost(e) {
+     const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+     const d = JSON.parse(e.postData.contents);
+     sheet.appendRow([
+       new Date(), d.name, d.phone, d.address,
+       d.product, d.size, d.color, d.qty, d.area, d.total
+     ]);
+     return ContentService.createTextOutput("ok");
+   }
+   ```
+
+3. **Deploy → New deployment → Web app** → Access: **Anyone** → Deploy।
+4. যে URL পাবে সেটা কপি করে `.env.local` ফাইলে দাও:
+
+   ```
+   GOOGLE_SHEET_WEBHOOK_URL=https://script.google.com/macros/s/xxxx/exec
+   ```
+
+ব্যস! এখন প্রতিটি অর্ডার Sheet এ সারি হয়ে জমা হবে।
+(URL সেট না করলেও সাইট চলবে, অর্ডার শুধু WhatsApp/সার্ভার লগে যাবে।)
+
+---
+
+## 🌐 নতুন GitHub + Vercel এ Live করা
+
+### ধাপ ১ — GitHub এ তোলা
+নতুন GitHub account এ একটা খালি repo বানাও (যেমন `ihda-shop`), তারপর:
+
+```bash
+git add .
+git commit -m "IHDA Shop landing page"
+git branch -M main
+git remote add origin https://github.com/তোমার-ইউজারনেম/ihda-shop.git
+git push -u origin main
+```
+
+### ধাপ ২ — Vercel এ deploy
+1. নতুন Vercel account এ login করো (GitHub দিয়ে)।
+2. **Add New → Project → Import** করো ওই repo।
+3. **Environment Variables** এ `GOOGLE_SHEET_WEBHOOK_URL` যোগ করো।
+4. **Deploy** চাপো → কিছুক্ষণ পর live লিঙ্ক পাবে।
+
+> পরে অন্য GitHub/Vercel account এ transfer করতে চাইলে:
+> GitHub: Repo Settings → Transfer ownership।
+> Vercel: নতুন account এ আবার Import, অথবা Project Settings → Transfer।

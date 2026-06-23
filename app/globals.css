@@ -1,26 +1,25 @@
 @import "tailwindcss";
 
+@theme {
+  --color-brand: #1b6e3c;
+  --color-brand-dark: #14532d;
+  --color-brand-light: #e8f3ec;
+  --color-accent: #dc2626;
+  --font-bangla: var(--font-bangla);
+}
+
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --foreground: #1f2937;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-bangla), "Segoe UI", system-ui, sans-serif;
+}
+
+/* হালকা scroll-behavior যাতে "অর্ডার করুন" বাটনে স্মুথ স্ক্রল হয় */
+html {
+  scroll-behavior: smooth;
 }
