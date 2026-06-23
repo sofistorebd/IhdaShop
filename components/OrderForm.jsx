@@ -1,17 +1,18 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { site } from "@/config";
-import { products } from "@/data/products";
 import ProductImage from "./ProductImage";
 
 export default function OrderForm({ product }) {
-  const [slug, setSlug] = useState(product.slug);
-  const selected = useMemo(
-    () => products.find((p) => p.slug === slug) ?? product,
-    [slug, product]
+  const variants = product.variants;
+  // ডিফল্ট: ফুল সেট (মেইন দামের সাথে মিলে), না পেলে প্রথমটা
+  const defaultIdx = Math.max(
+    0,
+    variants.findIndex((v) => v.price === product.price)
   );
 
+  const [vIdx, setVIdx] = useState(defaultIdx);
   const [size, setSize] = useState(product.sizes[0]);
   const [qty, setQty] = useState(1);
   const [area, setArea] = useState("inside"); // inside | outside
@@ -20,21 +21,18 @@ export default function OrderForm({ product }) {
   const [address, setAddress] = useState("");
   const [status, setStatus] = useState("idle"); // idle | sending | success | error
 
-  function chooseProduct(p) {
-    setSlug(p.slug);
-    setSize(p.sizes[0]);
-  }
-
+  const variant = variants[vIdx];
   const deliveryCharge =
     area === "inside" ? site.delivery.insideDhaka : site.delivery.outsideDhaka;
-  const subtotal = selected.price * qty;
+  const subtotal = variant.price * qty;
   const total = subtotal + deliveryCharge;
   const bdt = (n) => "৳" + n.toLocaleString("bn-BD");
+  const fullName = `${product.name} (${variant.name})`;
 
   function buildSummary() {
     return [
       `🛍️ নতুন অর্ডার — ${site.brandName}`,
-      `প্রোডাক্ট: ${selected.name}`,
+      `প্রোডাক্ট: ${fullName}`,
       `সাইজ: ${size}`,
       `পরিমাণ: ${qty}`,
       `ডেলিভারি: ${area === "inside" ? "ঢাকার ভিতরে" : "ঢাকার বাইরে"} (${bdt(
@@ -61,9 +59,9 @@ export default function OrderForm({ product }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          product: selected.name,
-          slug: selected.slug,
-          price: selected.price,
+          product: fullName,
+          slug: product.slug,
+          price: variant.price,
           size,
           qty,
           area: area === "inside" ? "ঢাকার ভিতরে" : "ঢাকার বাইরে",
@@ -116,19 +114,19 @@ export default function OrderForm({ product }) {
           onSubmit={handleSubmit}
           className="space-y-5 rounded-3xl bg-white p-6 shadow-lg"
         >
-          {/* প্রোডাক্ট নির্বাচন (সব প্রোডাক্ট) */}
+          {/* অপশন নির্বাচন (হিজাব-নিকাব / ফুল সেট) */}
           <div>
             <label className="mb-2 block text-sm font-semibold text-gray-700">
-              প্রোডাক্ট নির্বাচন করুন
+              অপশন নির্বাচন করুন
             </label>
             <div className="space-y-2">
-              {products.map((p) => {
-                const isSel = p.slug === slug;
+              {variants.map((v, i) => {
+                const isSel = i === vIdx;
                 return (
                   <button
                     type="button"
-                    key={p.slug}
-                    onClick={() => chooseProduct(p)}
+                    key={v.name}
+                    onClick={() => setVIdx(i)}
                     className={`flex w-full items-center gap-3 rounded-xl border p-2 text-left transition ${
                       isSel
                         ? "border-brand bg-brand-light"
@@ -136,20 +134,22 @@ export default function OrderForm({ product }) {
                     }`}
                   >
                     <span className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white">
-                      <ProductImage src={p.image} name={p.name} />
+                      <ProductImage src={product.image} name={product.name} />
                     </span>
                     <span className="flex-1">
                       <span className="block text-sm font-semibold text-ink">
-                        {p.name}
+                        {product.name}
                       </span>
                       <span className="block text-xs text-gray-500">
-                        {p.short}
+                        {v.name}
                       </span>
                     </span>
-                    <span className="font-bold text-brand">{bdt(p.price)}</span>
+                    <span className="font-bold text-brand">{bdt(v.price)}</span>
                     <span
                       className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
-                        isSel ? "border-brand bg-brand text-white" : "border-gray-300"
+                        isSel
+                          ? "border-brand bg-brand text-white"
+                          : "border-gray-300"
                       }`}
                     >
                       {isSel && <span className="text-[11px]">✓</span>}
@@ -166,7 +166,7 @@ export default function OrderForm({ product }) {
               সাইজ নির্বাচন করুন
             </label>
             <div className="flex flex-wrap gap-2">
-              {selected.sizes.map((s) => (
+              {product.sizes.map((s) => (
                 <button
                   type="button"
                   key={s}
@@ -268,7 +268,9 @@ export default function OrderForm({ product }) {
           {/* অর্ডার সামারি */}
           <div className="rounded-xl bg-gray-50 p-4 text-sm">
             <div className="flex justify-between text-gray-600">
-              <span>{selected.name} × {qty}</span>
+              <span>
+                {product.name} ({variant.name}) × {qty}
+              </span>
               <span>{bdt(subtotal)}</span>
             </div>
             <div className="mt-1 flex justify-between text-gray-600">
