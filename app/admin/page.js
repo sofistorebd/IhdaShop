@@ -5,6 +5,7 @@ import LogoutButton from "@/components/admin/LogoutButton";
 import { site } from "@/config";
 
 export const dynamic = "force-dynamic";
+export const metadata = { robots: { index: false, follow: false } };
 
 export default async function AdminPage() {
   let orders = [];

@@ -9,6 +9,21 @@ export const site = {
   description:
     "প্রিমিয়াম মানের বোরকা, হিজাব ও নিকাব — আরাম, পর্দা আর স্টাইল একসাথে। সারা বাংলাদেশে দ্রুত হোম ডেলিভারি।",
 
+  // SEO: তোমার live ডোমেইন (Vercel এ NEXT_PUBLIC_SITE_URL দিয়েও সেট করা যায়)
+  url: process.env.NEXT_PUBLIC_SITE_URL || "https://ihdashop.com",
+  keywords: [
+    "বোরকা",
+    "হিজাব",
+    "নিকাব",
+    "বোরকা অর্ডার",
+    "মডেস্ট ওয়্যার",
+    "burka",
+    "hijab",
+    "niqab",
+    "Bangladesh",
+    "IHDA Shop",
+  ],
+
   // যোগাযোগ
   phone: "01XXXXXXXXX", // <-- তোমার ফোন নাম্বার দাও
   whatsapp: "8801XXXXXXXXX", // <-- WhatsApp নাম্বার (country code সহ, + ছাড়া)

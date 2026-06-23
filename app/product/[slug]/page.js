@@ -17,9 +17,25 @@ export async function generateMetadata({ params }) {
   const { slug } = await params;
   const product = products.find((p) => p.slug === slug);
   if (!product) return {};
+  const url = `${site.url.replace(/\/$/, "")}/product/${product.slug}`;
+  const desc = `${product.short} — মাত্র ৳${product.price}। ${site.brandName} থেকে অর্ডার করুন।`;
   return {
-    title: `${product.name} — ${site.brandName}`,
-    description: product.short,
+    title: product.name,
+    description: desc,
+    alternates: { canonical: `/product/${product.slug}` },
+    openGraph: {
+      type: "website",
+      locale: "bn_BD",
+      siteName: site.brandName,
+      title: `${product.name} — ${site.brandName}`,
+      description: desc,
+      url,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${product.name} — ${site.brandName}`,
+      description: desc,
+    },
   };
 }
 
@@ -28,8 +44,31 @@ export default async function ProductPage({ params }) {
   const product = products.find((p) => p.slug === slug);
   if (!product) notFound();
 
+  const base = site.url.replace(/\/$/, "");
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.short,
+    sku: product.slug,
+    brand: { "@type": "Brand", name: site.brandName },
+    ...(product.image ? { image: `${base}${product.image}` } : {}),
+    offers: {
+      "@type": "Offer",
+      url: `${base}/product/${product.slug}`,
+      priceCurrency: "BDT",
+      price: product.price,
+      availability: "https://schema.org/InStock",
+      seller: { "@type": "Organization", name: site.brandName },
+    },
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Navbar />
       <main className="flex-1">
         <ProductDetail product={product} />
