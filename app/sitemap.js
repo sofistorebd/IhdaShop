@@ -1,10 +1,11 @@
 import { listProducts } from "@/lib/products-db";
-import { site } from "@/config";
+import { getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function sitemap() {
   const now = new Date();
+  const site = await getSettings();
   const base = site.url.replace(/\/$/, "");
 
   let products = [];

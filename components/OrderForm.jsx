@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { site } from "@/config";
 import ProductImage from "./ProductImage";
 
-export default function OrderForm({ product }) {
+export default function OrderForm({ product, settings }) {
+  const site = settings;
   const variants = product.variants;
   // ডিফল্ট: ফুল সেট (মেইন দামের সাথে মিলে), না পেলে প্রথমটা
   const defaultIdx = Math.max(

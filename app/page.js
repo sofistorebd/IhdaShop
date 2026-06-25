@@ -6,13 +6,16 @@ import OrderBanner from "@/components/OrderBanner";
 import Feedback from "@/components/Feedback";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
-import { site } from "@/config";
 import { listProducts } from "@/lib/products-db";
+import { getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const products = await listProducts({ activeOnly: true });
+  const [products, site] = await Promise.all([
+    listProducts({ activeOnly: true }),
+    getSettings(),
+  ]);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Store",
@@ -30,7 +33,7 @@ export default async function Home() {
       />
       <Navbar />
       <main className="flex-1">
-        <Hero products={products} />
+        <Hero products={products} settings={site} />
         <Features />
         <ProductGrid products={products} />
         <OrderBanner />

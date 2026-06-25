@@ -1,6 +1,7 @@
-import { site } from "@/config";
+import { getSettings } from "@/lib/settings";
 
-export default function robots() {
+export default async function robots() {
+  const site = await getSettings();
   const base = site.url.replace(/\/$/, "");
   return {
     rules: {

@@ -1,6 +1,7 @@
-import { site } from "@/config";
+import { getSettings } from "@/lib/settings";
 
-export default function OrderBanner() {
+export default async function OrderBanner() {
+  const site = await getSettings();
   const msg = encodeURIComponent(
     `আসসালামু আলাইকুম, ${site.brandName} থেকে অর্ডার করতে চাই।`
   );

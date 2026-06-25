@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { site } from "@/config";
 import ProductImage from "./ProductImage";
 
-export default function Hero({ products = [] }) {
+export default function Hero({ products = [], settings }) {
+  const site = settings || {};
   const slides = products.slice(0, 6);
   const [i, setI] = useState(0);
   const paused = useRef(false);

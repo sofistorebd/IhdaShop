@@ -1,15 +1,27 @@
 import Link from "next/link";
-import { site } from "@/config";
+import { getSettings } from "@/lib/settings";
 
-export default function Navbar() {
+export default async function Navbar() {
+  const site = await getSettings();
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-ink text-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <Link href="/" className="flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-lg text-white">
-            🧕
-          </span>
-          <span className="text-lg font-bold">{site.brandName}</span>
+          {site.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={site.logoUrl}
+              alt={site.brandName}
+              className="h-9 w-auto max-w-[160px] object-contain"
+            />
+          ) : (
+            <>
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-lg text-white">
+                🧕
+              </span>
+              <span className="text-lg font-bold">{site.brandName}</span>
+            </>
+          )}
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm font-medium text-white/80 md:flex">

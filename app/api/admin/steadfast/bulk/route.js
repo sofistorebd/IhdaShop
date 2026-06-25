@@ -3,7 +3,7 @@ import { getOrder, setCourierInfo } from "@/lib/db";
 import { createConsignment, steadfastReady } from "@/lib/steadfast";
 
 export async function POST(req) {
-  if (!steadfastReady()) {
+  if (!(await steadfastReady())) {
     return Response.json(
       { ok: false, error: "Steadfast API key সেট করা নেই" },
       { status: 400 }

@@ -1,6 +1,6 @@
 import { Hind_Siliguri } from "next/font/google";
 import "./globals.css";
-import { site } from "@/config";
+import { getSettings } from "@/lib/settings";
 
 const bangla = Hind_Siliguri({
   variable: "--font-bangla",
@@ -9,35 +9,44 @@ const bangla = Hind_Siliguri({
   display: "swap",
 });
 
-export const metadata = {
-  metadataBase: new URL(site.url),
-  title: {
-    default: `${site.brandName} — ${site.tagline}`,
-    template: `%s | ${site.brandName}`,
-  },
-  description: site.description,
-  keywords: site.keywords,
-  applicationName: site.brandName,
-  alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    locale: "bn_BD",
-    siteName: site.brandName,
-    title: `${site.brandName} — ${site.tagline}`,
+export async function generateMetadata() {
+  const site = await getSettings();
+  let metadataBase;
+  try {
+    metadataBase = new URL(site.url);
+  } catch {
+    metadataBase = undefined;
+  }
+  return {
+    metadataBase,
+    title: {
+      default: `${site.brandName} — ${site.tagline}`,
+      template: `%s | ${site.brandName}`,
+    },
     description: site.description,
-    url: site.url,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${site.brandName} — ${site.tagline}`,
-    description: site.description,
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: { index: true, follow: true, "max-image-preview": "large" },
-  },
-};
+    keywords: site.keywords,
+    applicationName: site.brandName,
+    alternates: { canonical: "/" },
+    openGraph: {
+      type: "website",
+      locale: "bn_BD",
+      siteName: site.brandName,
+      title: `${site.brandName} — ${site.tagline}`,
+      description: site.description,
+      url: site.url,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${site.brandName} — ${site.tagline}`,
+      description: site.description,
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: { index: true, follow: true, "max-image-preview": "large" },
+    },
+  };
+}
 
 export default function RootLayout({ children }) {
   return (

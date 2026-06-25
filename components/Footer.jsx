@@ -1,17 +1,29 @@
-import { site } from "@/config";
+import { getSettings } from "@/lib/settings";
 
-export default function Footer() {
+export default async function Footer() {
+  const site = await getSettings();
   return (
     <footer className="bg-ink text-white">
       <div className="mx-auto max-w-6xl px-4 py-10 text-center">
         <div className="flex items-center justify-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-lg">
-            🧕
-          </span>
-          <span className="text-lg font-bold">{site.brandName}</span>
+          {site.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={site.logoUrl}
+              alt={site.brandName}
+              className="h-10 w-auto max-w-[180px] object-contain"
+            />
+          ) : (
+            <>
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-lg">
+                🧕
+              </span>
+              <span className="text-lg font-bold">{site.brandName}</span>
+            </>
+          )}
         </div>
         <p className="mx-auto mt-3 max-w-md text-sm text-white/70">
-          {site.tagline}
+          {site.footerText}
         </p>
 
         <div className="mt-5 flex flex-wrap items-center justify-center gap-4 text-sm">
@@ -26,9 +38,16 @@ export default function Footer() {
           >
             💬 WhatsApp
           </a>
-          <a href={site.facebook} className="hover:text-brand">
-            Facebook
-          </a>
+          {site.facebook && (
+            <a href={site.facebook} className="hover:text-brand">
+              Facebook
+            </a>
+          )}
+          {site.instagram && (
+            <a href={site.instagram} className="hover:text-brand">
+              Instagram
+            </a>
+          )}
         </div>
 
         <p className="mt-6 text-xs text-white/50">

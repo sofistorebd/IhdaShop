@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getProductBySlug } from "@/lib/products-db";
-import { site } from "@/config";
+import { getSettings } from "@/lib/settings";
 import Navbar from "@/components/Navbar";
 import ProductDetail from "@/components/ProductDetail";
 import OrderBanner from "@/components/OrderBanner";
@@ -13,7 +13,10 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const [product, site] = await Promise.all([
+    getProductBySlug(slug),
+    getSettings(),
+  ]);
   if (!product) return {};
   const url = `${site.url.replace(/\/$/, "")}/product/${product.slug}`;
   const desc = `${product.short} — মাত্র ৳${product.price}। ${site.brandName} থেকে অর্ডার করুন।`;
@@ -39,7 +42,10 @@ export async function generateMetadata({ params }) {
 
 export default async function ProductPage({ params }) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const [product, site] = await Promise.all([
+    getProductBySlug(slug),
+    getSettings(),
+  ]);
   if (!product) notFound();
 
   const base = site.url.replace(/\/$/, "");
@@ -72,7 +78,7 @@ export default async function ProductPage({ params }) {
         <ProductDetail product={product} />
         <OrderBanner />
         <Feedback />
-        <OrderForm product={product} />
+        <OrderForm product={product} settings={site} />
       </main>
       <Footer />
       <WhatsAppFloat />

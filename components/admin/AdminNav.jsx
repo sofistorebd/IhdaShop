@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { site } from "@/config";
+import { getSettings } from "@/lib/settings";
 import LogoutButton from "./LogoutButton";
 
-export default function AdminNav({ active }) {
+export default async function AdminNav({ active }) {
+  const site = await getSettings();
   const link = (href, label, key) => (
     <Link
       href={href}
@@ -25,6 +26,7 @@ export default function AdminNav({ active }) {
         <nav className="flex items-center gap-2">
           {link("/admin", "অর্ডার", "orders")}
           {link("/admin/products", "প্রোডাক্ট", "products")}
+          {link("/admin/settings", "সেটিংস", "settings")}
           <LogoutButton />
         </nav>
       </div>

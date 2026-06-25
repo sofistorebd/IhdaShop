@@ -1,5 +1,5 @@
 import { getOrdersByIds } from "@/lib/db";
-import { site } from "@/config";
+import { getSettings } from "@/lib/settings";
 import PrintTrigger from "@/components/admin/PrintTrigger";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +45,7 @@ const css = `
 
 export default async function LabelsPage({ searchParams }) {
   const sp = await searchParams;
+  const site = await getSettings();
   const ids = String(sp?.ids || "")
     .split(",")
     .map((x) => Number(x.trim()))

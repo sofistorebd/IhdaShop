@@ -24,6 +24,7 @@ export default async function AdminPage() {
     revenue: orders.reduce((s, o) => s + (Number(o.total) || 0), 0),
   };
   const bdt = (n) => "৳" + Number(n).toLocaleString("bn-BD");
+  const sfReady = await steadfastReady();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -38,7 +39,7 @@ export default async function AdminPage() {
         {dbError && (
           <Banner>⚠️ ডেটাবেজে সংযোগ ব্যর্থ। DATABASE_URL যাচাই করো।</Banner>
         )}
-        {!steadfastReady() && (
+        {!sfReady && (
           <Banner>
             ℹ️ Steadfast API key সেট করা নেই — কুরিয়ার বাটন ডিজেবল থাকবে।
           </Banner>
@@ -53,10 +54,7 @@ export default async function AdminPage() {
         </div>
 
         <div className="mt-6">
-          <OrdersTable
-            initialOrders={orders}
-            steadfastReady={steadfastReady()}
-          />
+          <OrdersTable initialOrders={orders} steadfastReady={sfReady} />
         </div>
       </main>
     </div>
