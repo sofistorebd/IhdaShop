@@ -25,3 +25,19 @@ body {
 html {
   scroll-behavior: smooth;
 }
+
+/* একটানা right-to-left মার্কি স্লাইডার */
+@keyframes ihda-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  animation: ihda-marquee 35s linear infinite;
+}
+.marquee-track:hover {
+  animation-play-state: paused;
+}

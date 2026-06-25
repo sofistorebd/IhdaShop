@@ -3,6 +3,7 @@ import { getProductBySlug } from "@/lib/products-db";
 import { listReviews } from "@/lib/reviews-db";
 import { getSettings } from "@/lib/settings";
 import Navbar from "@/components/Navbar";
+import ProductMarquee from "@/components/ProductMarquee";
 import ProductDetail from "@/components/ProductDetail";
 import OrderBanner from "@/components/OrderBanner";
 import Feedback from "@/components/Feedback";
@@ -78,6 +79,7 @@ export default async function ProductPage({ params }) {
       />
       <Navbar />
       <main className="flex-1">
+        <ProductMarquee images={product.images} />
         <ProductDetail product={product} />
         <OrderBanner />
         <Feedback images={reviewImages} />
