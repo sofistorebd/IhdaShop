@@ -79,10 +79,14 @@ export default async function ProductPage({ params }) {
       />
       <Navbar />
       <main className="flex-1">
-        <ProductMarquee images={product.images} />
+        <ProductMarquee
+          images={product.images}
+          title={product.name}
+          subtitle={product.short}
+        />
         <ProductDetail product={product} />
-        <OrderBanner />
         <Feedback images={reviewImages} />
+        <OrderBanner />
         <OrderForm product={product} settings={site} />
       </main>
       <Footer />

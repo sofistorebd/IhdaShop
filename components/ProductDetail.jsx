@@ -63,7 +63,7 @@ export default function ProductDetail({ product }) {
               {product.badge}
             </span>
           )}
-          <h1 className="mt-3 text-3xl font-bold text-ink">{product.name}</h1>
+          <h2 className="mt-3 text-3xl font-bold text-ink">{product.name}</h2>
           <p className="mt-2 text-gray-600">{product.short}</p>
 
           <div className="mt-4 flex items-end gap-3">
