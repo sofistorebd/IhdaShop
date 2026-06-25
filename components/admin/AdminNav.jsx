@@ -2,33 +2,54 @@ import Link from "next/link";
 import { getSettings } from "@/lib/settings";
 import LogoutButton from "./LogoutButton";
 
+const TABS = [
+  { href: "/admin", key: "orders", label: "অর্ডার", icon: "🧾" },
+  { href: "/admin/products", key: "products", label: "প্রোডাক্ট", icon: "🛍️" },
+  { href: "/admin/reviews", key: "reviews", label: "রিভিউ", icon: "⭐" },
+  { href: "/admin/settings", key: "settings", label: "সেটিংস", icon: "⚙️" },
+];
+
 export default async function AdminNav({ active }) {
   const site = await getSettings();
-  const link = (href, label, key) => (
-    <Link
-      href={href}
-      className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-        active === key
-          ? "bg-brand text-white"
-          : "text-white/80 hover:bg-white/10"
-      }`}
-    >
-      {label}
-    </Link>
-  );
   return (
-    <header className="bg-ink text-white">
+    <header className="sticky top-0 z-40 bg-ink text-white shadow-md">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <Link href="/admin" className="flex items-center gap-2">
+          {site.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={site.logoUrl}
+              alt={site.brandName}
+              className="h-8 w-auto max-w-[130px] object-contain"
+            />
+          ) : (
+            <span className="text-xl">🧕</span>
+          )}
+          <span className="font-bold">{site.brandName}</span>
+          <span className="hidden rounded-full bg-white/15 px-2 py-0.5 text-[11px] sm:inline">
+            অ্যাডমিন
+          </span>
+        </Link>
+
         <div className="flex items-center gap-2">
-          <span className="text-xl">🧕</span>
-          <span className="font-bold">{site.brandName} — অ্যাডমিন</span>
-        </div>
-        <nav className="flex items-center gap-2">
-          {link("/admin", "অর্ডার", "orders")}
-          {link("/admin/products", "প্রোডাক্ট", "products")}
-          {link("/admin/settings", "সেটিংস", "settings")}
+          <nav className="flex items-center gap-1 rounded-full bg-white/10 p-1">
+            {TABS.map((t) => (
+              <Link
+                key={t.key}
+                href={t.href}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                  active === t.key
+                    ? "bg-brand text-white shadow"
+                    : "text-white/80 hover:bg-white/10"
+                }`}
+              >
+                <span>{t.icon}</span>
+                <span className="hidden sm:inline">{t.label}</span>
+              </Link>
+            ))}
+          </nav>
           <LogoutButton />
-        </nav>
+        </div>
       </div>
     </header>
   );

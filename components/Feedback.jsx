@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { feedbackImages } from "@/data/feedback";
 
-export default function Feedback() {
+export default function Feedback({ images = [] }) {
+  const feedbackImages = images;
   const trackRef = useRef(null);
   const idxRef = useRef(0);
   const pausedRef = useRef(false);
@@ -27,6 +27,8 @@ export default function Feedback() {
     }, 3500);
     return () => clearInterval(id);
   }, []);
+
+  if (!feedbackImages.length) return null;
 
   return (
     <section id="reviews" className="bg-white">

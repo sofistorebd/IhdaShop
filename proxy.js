@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ADMIN_COOKIE, expectedToken } from "@/lib/auth";
+import { ADMIN_COOKIE, sessionToken } from "@/lib/auth";
 
 export async function proxy(req) {
   const { pathname } = req.nextUrl;
@@ -10,8 +10,7 @@ export async function proxy(req) {
   }
 
   const cookie = req.cookies.get(ADMIN_COOKIE)?.value;
-  const ok =
-    process.env.ADMIN_PASSWORD && cookie && cookie === (await expectedToken());
+  const ok = cookie && cookie === (await sessionToken());
 
   if (!ok) {
     if (pathname.startsWith("/api/")) {

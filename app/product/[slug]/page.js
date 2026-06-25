@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getProductBySlug } from "@/lib/products-db";
+import { listReviews } from "@/lib/reviews-db";
 import { getSettings } from "@/lib/settings";
 import Navbar from "@/components/Navbar";
 import ProductDetail from "@/components/ProductDetail";
@@ -42,11 +43,13 @@ export async function generateMetadata({ params }) {
 
 export default async function ProductPage({ params }) {
   const { slug } = await params;
-  const [product, site] = await Promise.all([
+  const [product, site, reviews] = await Promise.all([
     getProductBySlug(slug),
     getSettings(),
+    listReviews(),
   ]);
   if (!product) notFound();
+  const reviewImages = reviews.map((r) => r.image_url);
 
   const base = site.url.replace(/\/$/, "");
   const jsonLd = {
@@ -77,7 +80,7 @@ export default async function ProductPage({ params }) {
       <main className="flex-1">
         <ProductDetail product={product} />
         <OrderBanner />
-        <Feedback />
+        <Feedback images={reviewImages} />
         <OrderForm product={product} settings={site} />
       </main>
       <Footer />

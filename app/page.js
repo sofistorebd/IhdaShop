@@ -7,15 +7,18 @@ import Feedback from "@/components/Feedback";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { listProducts } from "@/lib/products-db";
+import { listReviews } from "@/lib/reviews-db";
 import { getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [products, site] = await Promise.all([
+  const [products, reviews, site] = await Promise.all([
     listProducts({ activeOnly: true }),
+    listReviews(),
     getSettings(),
   ]);
+  const reviewImages = reviews.map((r) => r.image_url);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Store",
@@ -37,7 +40,7 @@ export default async function Home() {
         <Features />
         <ProductGrid products={products} />
         <OrderBanner />
-        <Feedback />
+        <Feedback images={reviewImages} />
       </main>
       <Footer />
       <WhatsAppFloat />

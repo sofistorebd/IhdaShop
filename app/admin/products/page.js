@@ -3,6 +3,7 @@ import { listProducts } from "@/lib/products-db";
 import { hasDb } from "@/lib/db";
 import AdminNav from "@/components/admin/AdminNav";
 import ProductsTable from "@/components/admin/ProductsTable";
+import { AdminHeader } from "@/components/admin/AdminUI";
 
 export const dynamic = "force-dynamic";
 export const metadata = { robots: { index: false, follow: false } };
@@ -20,13 +21,16 @@ export default async function AdminProductsPage() {
     <div className="min-h-screen bg-gray-50">
       <AdminNav active="products" />
       <main className="mx-auto max-w-6xl px-4 py-6">
-        <div className="mb-5 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-ink">প্রোডাক্ট ম্যানেজার</h1>
-          <Link href="/admin/products/new"
-            className="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white hover:bg-brand-dark">
-            + নতুন প্রোডাক্ট
-          </Link>
-        </div>
+        <AdminHeader
+          title="প্রোডাক্ট ম্যানেজার"
+          subtitle="প্রোডাক্ট যোগ, এডিট, দাম ও ছবি পরিবর্তন"
+          action={
+            <Link href="/admin/products/new"
+              className="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark">
+              + নতুন প্রোডাক্ট
+            </Link>
+          }
+        />
 
         {!hasDb() && (
           <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
