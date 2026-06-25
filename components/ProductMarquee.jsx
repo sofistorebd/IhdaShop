@@ -8,7 +8,7 @@ export default function ProductMarquee({ images = [], title, subtitle }) {
       {images.map((src, i) => (
         <div
           key={i}
-          className="aspect-[3/4] w-[88vw] shrink-0 overflow-hidden rounded-2xl border-2 border-white bg-white shadow-sm sm:w-[46vw] lg:w-[31vw]"
+          className="aspect-[3/4] w-[78vw] shrink-0 overflow-hidden rounded-2xl border-2 border-white bg-white shadow-sm sm:w-[42vw] lg:w-[360px]"
         >
           <ProductImage src={src} name="" />
         </div>
@@ -17,7 +17,7 @@ export default function ProductMarquee({ images = [], title, subtitle }) {
   );
 
   return (
-    <section className="overflow-hidden bg-brand-light pb-6 pt-8">
+    <section className="bg-brand-light pb-6 pt-8">
       {/* হেডিং */}
       <div className="mx-auto mb-6 max-w-6xl px-4 text-center">
         <span className="text-xs font-semibold uppercase tracking-wider text-brand">
@@ -31,11 +31,13 @@ export default function ProductMarquee({ images = [], title, subtitle }) {
         )}
       </div>
 
-      {/* একটানা স্লাইডার */}
+      {/* একটানা স্লাইডার — কন্টেইনারের মধ্যে, দুপাশে gutter */}
       {images.length > 0 && (
-        <div className="marquee-track flex w-max">
-          <Group />
-          <Group />
+        <div className="mx-auto max-w-6xl overflow-hidden px-4">
+          <div className="marquee-track flex w-max">
+            <Group />
+            <Group />
+          </div>
         </div>
       )}
 
