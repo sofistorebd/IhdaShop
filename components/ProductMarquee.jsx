@@ -4,12 +4,13 @@ import ProductImage from "./ProductImage";
 export default function ProductMarquee({ images = [] }) {
   if (!images.length) return null;
 
+  // মোবাইলে ১টা, ট্যাবলেটে ২টা, PC তে ৩টা দৃশ্যমান
   const Group = () => (
-    <div className="flex shrink-0 gap-4 pr-4">
+    <div className="flex shrink-0 gap-3 pr-3 sm:gap-4 sm:pr-4">
       {images.map((src, i) => (
         <div
           key={i}
-          className="h-52 w-40 shrink-0 overflow-hidden rounded-2xl border-2 border-white bg-white shadow-sm sm:h-60 sm:w-48"
+          className="aspect-[3/4] w-[88vw] shrink-0 overflow-hidden rounded-2xl border-2 border-white bg-white shadow-sm sm:w-[46vw] lg:w-[31vw]"
         >
           <ProductImage src={src} name="" />
         </div>
