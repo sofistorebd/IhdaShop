@@ -1,4 +1,5 @@
 // একটি প্রোডাক্ট আপডেট / ডিলিট
+import { revalidatePath } from "next/cache";
 import { getProductById, updateProduct, deleteProduct } from "@/lib/products-db";
 
 export async function GET(req, { params }) {
@@ -21,6 +22,7 @@ export async function PUT(req, { params }) {
     if (!product) {
       return Response.json({ ok: false, error: "পাওয়া যায়নি" }, { status: 404 });
     }
+    revalidatePath("/", "layout");
     return Response.json({ ok: true, product });
   } catch {
     return Response.json({ ok: false, error: "আপডেট ব্যর্থ" }, { status: 500 });
@@ -30,5 +32,6 @@ export async function PUT(req, { params }) {
 export async function DELETE(req, { params }) {
   const { id } = await params;
   await deleteProduct(Number(id));
+  revalidatePath("/", "layout");
   return Response.json({ ok: true });
 }

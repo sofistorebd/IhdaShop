@@ -1,4 +1,5 @@
 // প্রোডাক্ট লিস্ট + নতুন প্রোডাক্ট তৈরি
+import { revalidatePath } from "next/cache";
 import { listProducts, createProduct } from "@/lib/products-db";
 
 export async function GET() {
@@ -16,6 +17,7 @@ export async function POST(req) {
   }
   try {
     const product = await createProduct(data);
+    revalidatePath("/", "layout");
     return Response.json({ ok: true, product });
   } catch (err) {
     const msg = String(err?.message || "").includes("duplicate")

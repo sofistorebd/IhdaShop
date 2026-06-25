@@ -1,7 +1,7 @@
 import { listProducts } from "@/lib/products-db";
 import { getSettings } from "@/lib/settings";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export default async function sitemap() {
   const now = new Date();

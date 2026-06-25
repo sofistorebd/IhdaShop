@@ -1,4 +1,5 @@
 // সাইট সেটিংস পড়া ও আপডেট (ব্র্যান্ড + ইন্টিগ্রেশন)
+import { revalidatePath } from "next/cache";
 import { getSettingsForAdmin, updateSettings } from "@/lib/settings";
 
 export async function GET() {
@@ -13,6 +14,7 @@ export async function POST(req) {
   }
   try {
     await updateSettings(data);
+    revalidatePath("/", "layout");
     return Response.json({ ok: true });
   } catch (err) {
     return Response.json(

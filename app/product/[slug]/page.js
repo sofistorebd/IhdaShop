@@ -10,7 +10,7 @@ import OrderForm from "@/components/OrderForm";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60; // ISR cache
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;

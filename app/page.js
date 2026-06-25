@@ -10,7 +10,7 @@ import { listProducts } from "@/lib/products-db";
 import { listReviews } from "@/lib/reviews-db";
 import { getSettings } from "@/lib/settings";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60; // ISR: ৬০s cache, admin বদলালে সাথে সাথে refresh
 
 export default async function Home() {
   const [products, reviews, site] = await Promise.all([

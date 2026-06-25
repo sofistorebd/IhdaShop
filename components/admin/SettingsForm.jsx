@@ -18,6 +18,7 @@ export default function SettingsForm({ initial }) {
     deliveryInside: String(initial.delivery?.insideDhaka ?? ""),
     deliveryOutside: String(initial.delivery?.outsideDhaka ?? ""),
     telegramChatId: initial.telegramChatId || "",
+    facebookPixelId: initial.facebookPixelId || "",
     colorPrimary: initial.colorPrimary || "#e23a7a",
     colorSecondary: initial.colorSecondary || "#be185d",
     colorGlobal: initial.colorGlobal || "#111111",
@@ -225,6 +226,10 @@ export default function SettingsForm({ initial }) {
         <div>
           <label className={lbl}>Telegram Chat ID</label>
           <input className={inp} value={f.telegramChatId} onChange={(e) => set("telegramChatId", e.target.value)} placeholder="123456789" />
+        </div>
+        <div>
+          <label className={lbl}>Facebook Pixel ID (ads ট্র্যাকিং)</label>
+          <input className={inp} value={f.facebookPixelId} onChange={(e) => set("facebookPixelId", e.target.value)} placeholder="1234567890" />
         </div>
         <div>
           <label className={lbl}>

@@ -1,13 +1,19 @@
-// ছবি থাকলে দেখাবে, না থাকলে সুন্দর placeholder দেখাবে।
+import Image from "next/image";
+
+// ছবি থাকলে অপ্টিমাইজড next/image দেখাবে, না থাকলে সুন্দর placeholder।
+// প্যারেন্টের একটা নির্দিষ্ট সাইজ থাকতে হবে (aspect-* / h-/w-)।
 export default function ProductImage({ src, name, className = "" }) {
   if (src) {
-    // eslint-disable-next-line @next/next/no-img-element
     return (
-      <img
-        src={src}
-        alt={name}
-        className={`h-full w-full object-cover ${className}`}
-      />
+      <span className="relative block h-full w-full">
+        <Image
+          src={src}
+          alt={name || ""}
+          fill
+          sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 300px"
+          className={`object-cover ${className}`}
+        />
+      </span>
     );
   }
   return (
@@ -18,7 +24,6 @@ export default function ProductImage({ src, name, className = "" }) {
       <span className="mt-2 px-3 text-center text-sm font-medium text-brand-dark">
         {name}
       </span>
-      <span className="mt-1 text-[11px] text-gray-400">ছবি যোগ করুন</span>
     </div>
   );
 }
