@@ -18,6 +18,9 @@ export default function SettingsForm({ initial }) {
     deliveryInside: String(initial.delivery?.insideDhaka ?? ""),
     deliveryOutside: String(initial.delivery?.outsideDhaka ?? ""),
     telegramChatId: initial.telegramChatId || "",
+    colorPrimary: initial.colorPrimary || "#e23a7a",
+    colorSecondary: initial.colorSecondary || "#be185d",
+    colorGlobal: initial.colorGlobal || "#111111",
     // সিক্রেট — খালি রাখলে আগেরটা থাকবে
     telegramBotToken: "",
     steadfastApiKey: "",
@@ -125,6 +128,51 @@ export default function SettingsForm({ initial }) {
         <div>
           <label className={lbl}>সাইট URL (SEO)</label>
           <input className={inp} value={f.url} onChange={(e) => set("url", e.target.value)} placeholder="https://yourdomain.com" />
+        </div>
+      </Section>
+
+      <Section title="🎨 থিম রঙ">
+        <p className="text-xs text-gray-500">
+          রঙ বদলালে পুরো সাইটের বাটন, হোভার, লিঙ্ক, হেডার সব সেই অনুযায়ী বদলে যাবে।
+        </p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            ["colorPrimary", "Primary (বাটন/অ্যাকসেন্ট)"],
+            ["colorSecondary", "Secondary (হোভার)"],
+            ["colorGlobal", "Global (টেক্সট/হেডার)"],
+          ].map(([k, label]) => (
+            <div key={k}>
+              <label className={lbl}>{label}</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={f[k]}
+                  onChange={(e) => set(k, e.target.value)}
+                  className="h-10 w-12 shrink-0 cursor-pointer rounded-lg border border-gray-200"
+                />
+                <input
+                  className={inp}
+                  value={f[k]}
+                  onChange={(e) => set(k, e.target.value)}
+                  placeholder="#e23a7a"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* লাইভ প্রিভিউ */}
+        <div className="rounded-xl border border-gray-100 p-3" style={{ background: f.colorGlobal }}>
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" style={{ background: f.colorPrimary }}
+              className="rounded-full px-4 py-2 text-sm font-semibold text-white">
+              অর্ডার করুন
+            </button>
+            <button type="button" style={{ background: f.colorSecondary }}
+              className="rounded-full px-4 py-2 text-sm font-semibold text-white">
+              হোভার রঙ
+            </button>
+            <span className="text-sm" style={{ color: "#fff" }}>প্রিভিউ</span>
+          </div>
         </div>
       </Section>
 
