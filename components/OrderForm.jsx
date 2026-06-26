@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import ProductImage from "./ProductImage";
+import { track } from "@/lib/fbpixel";
 
 export default function OrderForm({ product, settings }) {
+  const checkoutFired = useRef(false);
   const site = settings;
   const variants = product.variants;
   // ডিফল্ট: ফুল সেট (মেইন দামের সাথে মিলে), না পেলে প্রথমটা
@@ -73,10 +75,30 @@ export default function OrderForm({ product, settings }) {
         }),
       });
       if (!res.ok) throw new Error("failed");
+      // Facebook Pixel — Purchase কনভার্সন
+      track("Purchase", {
+        value: total,
+        currency: "BDT",
+        content_name: fullName,
+        content_ids: [product.slug],
+        content_type: "product",
+      });
       setStatus("success");
     } catch {
       setStatus("error");
     }
+  }
+
+  // প্রথম interaction এ একবার InitiateCheckout
+  function onFirstInteract() {
+    if (checkoutFired.current) return;
+    checkoutFired.current = true;
+    track("InitiateCheckout", {
+      value: total,
+      currency: "BDT",
+      content_name: fullName,
+      content_ids: [product.slug],
+    });
   }
 
   if (status === "success") {
@@ -112,6 +134,7 @@ export default function OrderForm({ product, settings }) {
 
         <form
           onSubmit={handleSubmit}
+          onFocusCapture={onFirstInteract}
           className="space-y-5 rounded-3xl bg-white p-6 shadow-lg"
         >
           {/* অপশন নির্বাচন (হিজাব-নিকাব / ফুল সেট) */}

@@ -3,6 +3,7 @@ import { getProductBySlug } from "@/lib/products-db";
 import { listReviews } from "@/lib/reviews-db";
 import { getSettings } from "@/lib/settings";
 import Navbar from "@/components/Navbar";
+import PixelTrack from "@/components/PixelTrack";
 import ProductMarquee from "@/components/ProductMarquee";
 import ProductDetail from "@/components/ProductDetail";
 import OrderBanner from "@/components/OrderBanner";
@@ -76,6 +77,16 @@ export default async function ProductPage({ params }) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <PixelTrack
+        event="ViewContent"
+        data={{
+          content_name: product.name,
+          content_type: "product",
+          content_ids: [product.slug],
+          value: product.price,
+          currency: "BDT",
+        }}
       />
       <Navbar />
       <main className="flex-1">
