@@ -19,6 +19,8 @@ export default function SettingsForm({ initial }) {
     deliveryOutside: String(initial.delivery?.outsideDhaka ?? ""),
     telegramChatId: initial.telegramChatId || "",
     facebookPixelId: initial.facebookPixelId || "",
+    merchantName: initial.merchantName || "",
+    merchantId: initial.merchantId || "",
     colorPrimary: initial.colorPrimary || "#e23a7a",
     colorSecondary: initial.colorSecondary || "#be185d",
     colorGlobal: initial.colorGlobal || "#111111",
@@ -207,6 +209,22 @@ export default function SettingsForm({ initial }) {
           <div>
             <label className={lbl}>ঢাকার বাইরে (৳)</label>
             <input type="number" className={inp} value={f.deliveryOutside} onChange={(e) => set("deliveryOutside", e.target.value)} />
+          </div>
+        </div>
+      </Section>
+
+      <Section title="🏷️ কুরিয়ার লেবেল">
+        <p className="text-xs text-gray-500">
+          ৫০×৭৫mm লেবেলে যে ব্যবসার নাম ও মার্চেন্ট আইডি ছাপা হবে।
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={lbl}>ব্যবসার নাম (লেবেলে)</label>
+            <input className={inp} value={f.merchantName} onChange={(e) => set("merchantName", e.target.value)} placeholder="খালি রাখলে সাইটের নাম" />
+          </div>
+          <div>
+            <label className={lbl}>মার্চেন্ট আইডি</label>
+            <input className={inp} value={f.merchantId} onChange={(e) => set("merchantId", e.target.value)} placeholder="যেমন: M-12345" />
           </div>
         </div>
       </Section>

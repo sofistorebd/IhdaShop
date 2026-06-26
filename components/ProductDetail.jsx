@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import ProductImage from "./ProductImage";
 
 export default function ProductDetail({ product }) {
@@ -9,27 +9,20 @@ export default function ProductDetail({ product }) {
       ? product.images
       : [product.image].filter(Boolean);
   const [i, setI] = useState(0);
-  const paused = useRef(false);
   const bdt = (n) => "৳" + n.toLocaleString("bn-BD");
 
+  // একটানা অটো-স্লাইড — হোভার/টাচে থামে না
   useEffect(() => {
     if (gallery.length <= 1) return;
-    const id = setInterval(() => {
-      if (!paused.current) setI((v) => (v + 1) % gallery.length);
-    }, 3000);
+    const id = setInterval(() => setI((v) => (v + 1) % gallery.length), 3000);
     return () => clearInterval(id);
   }, [gallery.length]);
 
   return (
     <section className="bg-white">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-2 md:py-14">
-        {/* অটো-স্লাইডার */}
-        <div
-          className="relative aspect-[4/5] overflow-hidden rounded-3xl border border-gray-100 shadow-sm"
-          onMouseEnter={() => (paused.current = true)}
-          onMouseLeave={() => (paused.current = false)}
-          onTouchStart={() => (paused.current = true)}
-        >
+        {/* অটো-স্লাইডার (থামে না) */}
+        <div className="relative aspect-[4/5] overflow-hidden rounded-3xl border border-gray-100 shadow-sm">
           {gallery.map((img, idx) => (
             <div
               key={idx}

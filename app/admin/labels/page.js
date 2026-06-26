@@ -13,33 +13,36 @@ const css = `
     .label-sheet { gap: 0 !important; padding: 0 !important; background: #fff !important; }
   }
   .label-sheet {
-    display: flex; flex-wrap: wrap; gap: 4mm; padding: 4mm;
-    background: #f3f4f6;
+    display: flex; flex-wrap: wrap; gap: 4mm; padding: 4mm; background: #e5e7eb;
   }
   .label {
     width: 50mm; height: 75mm; box-sizing: border-box;
-    padding: 3mm; background: #fff; color: #000;
-    border: 0.2mm solid #000; border-radius: 1mm;
+    padding: 2.5mm; background: #fff; color: #000;
+    border: 0.25mm solid #000;
     display: flex; flex-direction: column;
-    font-size: 9pt; line-height: 1.3; overflow: hidden;
+    font-size: 8.5pt; line-height: 1.25; overflow: hidden;
     page-break-after: always; break-after: page;
+    font-family: 'Hind Siliguri', sans-serif;
   }
-  .label .brand {
-    display: flex; justify-content: space-between; align-items: baseline;
-    border-bottom: 0.4mm solid #000; padding-bottom: 1mm; margin-bottom: 1.5mm;
-  }
-  .label .brand b { font-size: 12pt; }
-  .label .row { margin: 0.4mm 0; }
-  .label .row span { font-weight: 600; }
-  .label .spacer { flex: 1; }
-  .label .cons {
-    margin-top: 1.5mm; border-top: 0.3mm dashed #000; padding-top: 1mm;
-    font-size: 8pt;
-  }
-  .label .cons b { font-size: 11pt; letter-spacing: 0.3pt; }
-  .label .cod {
-    margin-top: 1mm; text-align: center; border: 0.4mm solid #000;
-    border-radius: 1mm; padding: 1mm; font-size: 13pt; font-weight: 800;
+  /* হেডার — ব্যবসার নাম + merchant id */
+  .lh { text-align: center; border-bottom: 0.4mm solid #000; padding-bottom: 1.2mm; }
+  .lh .bn { font-size: 12.5pt; font-weight: 800; line-height: 1.1; }
+  .lh .mid { font-size: 7pt; letter-spacing: .3pt; margin-top: .5mm; }
+  /* প্রাপক */
+  .sec { padding: 1.4mm 0; border-bottom: 0.2mm dashed #555; }
+  .sec .lbl { font-size: 6.5pt; text-transform: uppercase; letter-spacing: .5pt; color: #444; }
+  .sec .nm { font-size: 10.5pt; font-weight: 700; }
+  .sec .ph { font-size: 9.5pt; font-weight: 600; }
+  .sec .ad { font-size: 8pt; margin-top: .3mm; }
+  .prod { padding: 1.4mm 0; font-size: 8.5pt; border-bottom: 0.2mm dashed #555; }
+  .prod b { font-weight: 700; }
+  .spacer { flex: 1; }
+  /* consignment + cod */
+  .cn { text-align: center; font-size: 7pt; letter-spacing: .3pt; margin-top: 1.2mm; }
+  .cn b { display: block; font-size: 12pt; letter-spacing: .5pt; margin-top: .3mm; }
+  .cod {
+    margin-top: 1.4mm; text-align: center; border: 0.5mm solid #000; border-radius: 1mm;
+    padding: 1.2mm; font-size: 13pt; font-weight: 800;
   }
 `;
 
@@ -54,6 +57,7 @@ export default async function LabelsPage({ searchParams }) {
   const all = await getOrdersByIds(ids);
   const orders = all.filter((o) => o.consignment_id); // শুধু কুরিয়ারে পাঠানো
 
+  const businessName = site.merchantName || site.brandName;
   const bdt = (n) => "৳" + Number(n).toLocaleString("bn-BD");
 
   return (
@@ -69,26 +73,28 @@ export default async function LabelsPage({ searchParams }) {
         <div className="label-sheet">
           {orders.map((o) => (
             <div className="label" key={o.id}>
-              <div className="brand">
-                <b>{site.brandName}</b>
-                <span>#{o.id}</span>
+              <div className="lh">
+                <div className="bn">{businessName}</div>
+                {site.merchantId && <div className="mid">Merchant ID: {site.merchantId}</div>}
               </div>
-              <div className="row">
-                <span>নাম:</span> {o.name}
+
+              <div className="sec">
+                <div className="lbl">প্রাপক / Deliver to</div>
+                <div className="nm">{o.name}</div>
+                <div className="ph">📞 {o.phone}</div>
+                <div className="ad">{o.address}</div>
               </div>
-              <div className="row">
-                <span>ফোন:</span> {o.phone}
-              </div>
-              <div className="row">
-                <span>প্রোডাক্ট:</span> {o.product}
-              </div>
-              <div className="row">
-                <span>সাইজ:</span> {o.size}
-              </div>
-              <div className="spacer" />
-              <div className="cons">
-                Consignment ID:
+
+              <div className="prod">
+                <b>{o.product}</b>
                 <br />
+                সাইজ: {o.size} · পরিমাণ: {o.qty} · {o.area}
+              </div>
+
+              <div className="spacer" />
+
+              <div className="cn">
+                CONSIGNMENT ID
                 <b>{o.consignment_id}</b>
               </div>
               <div className="cod">COD: {bdt(o.total)}</div>
