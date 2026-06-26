@@ -2,6 +2,12 @@ import Script from "next/script";
 import { Hind_Siliguri } from "next/font/google";
 import "./globals.css";
 import { getSettings } from "@/lib/settings";
+import ServiceWorker from "@/components/ServiceWorker";
+
+export async function generateViewport() {
+  const site = await getSettings();
+  return { themeColor: site.colorPrimary || "#e23a7a" };
+}
 
 const bangla = Hind_Siliguri({
   variable: "--font-bangla",
@@ -27,6 +33,12 @@ export async function generateMetadata() {
     description: site.description,
     keywords: site.keywords,
     applicationName: site.brandName,
+    manifest: "/manifest.webmanifest",
+    icons: {
+      icon: "/icon-192.png",
+      apple: "/icon-192.png",
+    },
+    appleWebApp: { capable: true, statusBarStyle: "default", title: site.brandName },
     alternates: { canonical: "/" },
     openGraph: {
       type: "website",
@@ -101,6 +113,7 @@ fbq('init','${site.facebookPixelId}');fbq('track','PageView');`}
           </>
         )}
         {children}
+        <ServiceWorker />
       </body>
     </html>
   );
