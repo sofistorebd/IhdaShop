@@ -1,6 +1,6 @@
-# IHDA Shop 🧕
+# STORE — E‑commerce Template 🛍️
 
-Next.js + Tailwind দিয়ে তৈরি মডেস্ট-ওয়্যার (বোরকা/হিজাব/নিকাব) অর্ডার সাইট।
+Next.js + Tailwind দিয়ে তৈরি white‑label সিঙ্গেল-পেজ অর্ডার সাইট (landing + product page)। ব্র্যান্ড, রঙ, লোগো, প্রোডাক্ট, রিভিউ, ইন্টিগ্রেশন — সব admin থেকে। প্রতি client এর নিজের GitHub + Vercel এ deploy করার জন্য।
 
 **বৈশিষ্ট্য**
 - ২ পেজ: মেইন পেজ (প্রোডাক্ট গ্রিড) + সিঙ্গেল প্রোডাক্ট পেজ (`/product/[slug]`) যেখানে অর্ডার ফর্ম
@@ -77,13 +77,13 @@ ADMIN_PASSWORD=          # /admin এ লগইন পাসওয়ার্�
 ## 🌐 নতুন GitHub + Vercel এ Live করা
 
 ### ধাপ ১ — GitHub এ তোলা
-নতুন GitHub account এ খালি repo বানাও (যেমন `ihda-shop`), তারপর:
+নতুন GitHub account এ খালি repo বানাও (যেমন `store`), তারপর:
 
 ```bash
 git add .
-git commit -m "IHDA Shop"
+git commit -m "Initial commit"
 git branch -M main
-git remote add origin https://github.com/তোমার-ইউজারনেম/ihda-shop.git
+git remote add origin https://github.com/your-username/store.git
 git push -u origin main
 ```
 

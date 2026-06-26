@@ -1,5 +1,5 @@
-// IHDA Shop service worker — offline shell + static caching
-const CACHE = "ihda-cache-v1";
+// STORE service worker — offline shell + static caching
+const CACHE = "store-cache-v1";
 
 self.addEventListener("install", () => self.skipWaiting());
 

@@ -1,33 +1,23 @@
 // ====================================================================
-//  IHDA Shop — সাইটের মূল সেটিংস। এই ফাইলটা edit করলেই পুরো সাইট বদলাবে।
+//  STORE — ডেমো টেমপ্লেট ডিফল্ট সেটিংস।
+//  এগুলো শুধু fallback; আসল মান client admin → Settings থেকে দেবে।
 // ====================================================================
 
 export const site = {
-  // ব্র্যান্ডের নাম
-  brandName: "IHDA Shop",
-  tagline: "পর্দা ও ফ্যাশনের নিখুঁত মেলবন্ধন",
+  // ব্র্যান্ডের নাম (client admin Settings থেকে বদলাবে)
+  brandName: "STORE",
+  tagline: "আপনার পছন্দের সেরা কালেকশন",
   description:
-    "প্রিমিয়াম মানের বোরকা, হিজাব ও নিকাব — আরাম, পর্দা আর স্টাইল একসাথে। সারা বাংলাদেশে দ্রুত হোম ডেলিভারি।",
+    "প্রিমিয়াম মানের প্রোডাক্ট — দ্রুত হোম ডেলিভারি সারা বাংলাদেশে।",
 
-  // SEO: তোমার live ডোমেইন (Vercel এ NEXT_PUBLIC_SITE_URL দিয়েও সেট করা যায়)
-  url: process.env.NEXT_PUBLIC_SITE_URL || "https://ihdashop.com",
-  keywords: [
-    "বোরকা",
-    "হিজাব",
-    "নিকাব",
-    "বোরকা অর্ডার",
-    "মডেস্ট ওয়্যার",
-    "burka",
-    "hijab",
-    "niqab",
-    "Bangladesh",
-    "IHDA Shop",
-  ],
+  // SEO: live ডোমেইন (Vercel এ NEXT_PUBLIC_SITE_URL দিয়েও সেট করা যায়)
+  url: process.env.NEXT_PUBLIC_SITE_URL || "https://store.example.com",
+  keywords: ["online shop", "bangladesh", "ecommerce", "STORE"],
 
-  // যোগাযোগ
-  phone: "01813767615", // <-- তোমার ফোন নাম্বার দাও
-  whatsapp: "8801813767615", // <-- WhatsApp নাম্বার (country code সহ, + ছাড়া)
-  email: "ihdashop@example.com",
+  // যোগাযোগ (admin Settings থেকে দাও)
+  phone: "01XXXXXXXXX",
+  whatsapp: "8801XXXXXXXXX", // country code সহ, + ছাড়া
+  email: "store@example.com",
   facebook: "https://facebook.com/",
   instagram: "https://instagram.com/",
 
@@ -40,8 +30,8 @@ export const site = {
 
 // trust badges (হিরোর নিচের ৪টা আইকন সেকশন)
 export const features = [
-  { icon: "✨", title: "প্রিমিয়াম কোয়ালিটি", desc: "উন্নত মানের কাপড় ও নিখুঁত সেলাই" },
-  { icon: "🧕", title: "১০০% পর্দা নিশ্চয়তা", desc: "পরিপূর্ণ পর্দা মেনে তৈরি ডিজাইন" },
+  { icon: "✨", title: "প্রিমিয়াম কোয়ালিটি", desc: "উন্নত মানের প্রোডাক্ট" },
+  { icon: "✅", title: "১০০% নিশ্চয়তা", desc: "যাচাই করা মান" },
   { icon: "🚚", title: "দ্রুত ডেলিভারি", desc: "সারা দেশে ২–৩ দিনে হোম ডেলিভারি" },
   { icon: "💬", title: "কাস্টমার সার্ভিস", desc: "যেকোনো প্রয়োজনে আমরা পাশে আছি" },
 ];
