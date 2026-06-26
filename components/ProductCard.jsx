@@ -7,7 +7,7 @@ export default function ProductCard({ product }) {
       href={`/product/${product.slug}`}
       className="group flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:shadow-md"
     >
-      <div className="relative aspect-square overflow-hidden">
+      <div className="relative aspect-[4/5] overflow-hidden">
         <ProductImage src={product.image} name={product.name} />
         {product.badge && (
           <span className="absolute left-3 top-3 rounded-full bg-brand px-3 py-1 text-xs font-semibold text-white">

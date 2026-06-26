@@ -10,7 +10,8 @@ export default function ProductImage({ src, name, className = "" }) {
           src={src}
           alt={name || ""}
           fill
-          sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 300px"
+          quality={82}
+          sizes="(max-width: 768px) 92vw, 560px"
           className={`object-cover ${className}`}
         />
       </span>

@@ -25,7 +25,7 @@ export default function ProductDetail({ product }) {
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-2 md:py-14">
         {/* অটো-স্লাইডার */}
         <div
-          className="relative aspect-square overflow-hidden rounded-3xl border border-gray-100 shadow-sm"
+          className="relative aspect-[4/5] overflow-hidden rounded-3xl border border-gray-100 shadow-sm"
           onMouseEnter={() => (paused.current = true)}
           onMouseLeave={() => (paused.current = false)}
           onTouchStart={() => (paused.current = true)}
