@@ -3,6 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+// মডিউল-লেভেল (কম্পোনেন্টের বাইরে) — নাহলে প্রতি রেন্ডারে re-mount হয়ে স্ক্রল/ফোকাস হারায়
+function Section({ title, children }) {
+  return (
+    <div className="rounded-2xl bg-white p-6 shadow-sm">
+      <h2 className="mb-4 text-base font-bold text-ink">{title}</h2>
+      <div className="space-y-4">{children}</div>
+    </div>
+  );
+}
+
 export default function SettingsForm({ initial }) {
   const router = useRouter();
   const [f, setF] = useState({
@@ -76,15 +86,6 @@ export default function SettingsForm({ initial }) {
   const inp =
     "w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand";
   const lbl = "mb-1 block text-sm font-semibold text-gray-700";
-
-  function Section({ title, children }) {
-    return (
-      <div className="rounded-2xl bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-base font-bold text-ink">{title}</h2>
-        <div className="space-y-4">{children}</div>
-      </div>
-    );
-  }
 
   return (
     <form onSubmit={submit} className="space-y-5">
