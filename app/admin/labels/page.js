@@ -19,6 +19,7 @@ const css = `
   .label {
     width: 50mm; height: 75mm; box-sizing: border-box;
     padding: 2.4mm; background: #fff; color: #000;
+    border: 0.3mm solid #000;
     display: flex; flex-direction: column;
     font-size: 7.5pt; line-height: 1.25; overflow: hidden;
     page-break-after: always; break-after: page;
@@ -42,13 +43,12 @@ const css = `
   .tbl .qty { text-align: right; }
   .tbl .sz { width: 11mm; }
   .spacer { flex: 1; }
-  /* footer: cod + barcode */
-  .ft { display: flex; align-items: flex-end; justify-content: space-between; gap: 2mm; margin-top: 1.2mm; }
-  .ft .cod .k { font-size: 8pt; font-weight: 800; }
-  .ft .cod .a { font-size: 14pt; font-weight: 800; line-height: 1; }
-  .bc { width: 24mm; text-align: center; }
-  .bc svg { width: 24mm; height: 9mm; display: block; }
-  .bc .num { font-size: 6.5pt; letter-spacing: .5pt; margin-top: .3mm; }
+  /* footer: cod (center, single line) + barcode (single full line) */
+  .ft { margin-top: 1.2mm; }
+  .cod { text-align: center; font-size: 10.5pt; font-weight: 800; white-space: nowrap; border-top: 0.4mm solid #000; padding-top: 1.2mm; }
+  .bc { margin-top: 1.2mm; text-align: center; }
+  .bc svg { width: 100%; height: 9mm; display: block; }
+  .bc .num { font-size: 6.5pt; letter-spacing: .8pt; margin-top: .3mm; }
 `;
 
 export default async function LabelsPage({ searchParams }) {
@@ -126,10 +126,7 @@ export default async function LabelsPage({ searchParams }) {
 
               {/* footer */}
               <div className="ft">
-                <div className="cod">
-                  <div className="k">COD AMOUNT:</div>
-                  <div className="a">{bdt(o.total)}</div>
-                </div>
+                <div className="cod">COD AMOUNT: {bdt(o.total)}</div>
                 <div className="bc">
                   <Barcode value={String(o.consignment_id)} />
                   <div className="num">{o.consignment_id}</div>
