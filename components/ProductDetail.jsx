@@ -34,18 +34,39 @@ export default function ProductDetail({ product }) {
             </div>
           ))}
           {gallery.length > 1 && (
-            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
-              {gallery.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setI(idx)}
-                  aria-label={`ছবি ${idx + 1}`}
-                  className={`h-1.5 rounded-full transition-all ${
-                    idx === i ? "w-5 bg-white" : "w-1.5 bg-white/60"
-                  }`}
-                />
-              ))}
-            </div>
+            <>
+              {/* prev / next টাচেবল বাটন */}
+              <button
+                type="button"
+                onClick={() => setI((v) => (v - 1 + gallery.length) % gallery.length)}
+                aria-label="আগের ছবি"
+                className="absolute left-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-lg text-ink shadow-md backdrop-blur transition hover:bg-white active:scale-90"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={() => setI((v) => (v + 1) % gallery.length)}
+                aria-label="পরের ছবি"
+                className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-lg text-ink shadow-md backdrop-blur transition hover:bg-white active:scale-90"
+              >
+                ›
+              </button>
+
+              {/* dots */}
+              <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+                {gallery.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setI(idx)}
+                    aria-label={`ছবি ${idx + 1}`}
+                    className={`h-1.5 rounded-full transition-all ${
+                      idx === i ? "w-5 bg-white" : "w-1.5 bg-white/60"
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </div>
 
