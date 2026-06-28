@@ -12,7 +12,8 @@ export default async function Navbar() {
             <img
               src={site.logoUrl}
               alt={site.brandName}
-              className="h-9 w-auto max-w-[160px] object-contain"
+              style={{ height: `${site.logoHeight}px` }}
+              className="w-auto max-w-[220px] object-contain"
             />
           ) : (
             <>

@@ -31,15 +31,17 @@ export default function SettingsForm({ initial }) {
     facebookPixelId: initial.facebookPixelId || "",
     merchantName: initial.merchantName || "",
     merchantId: initial.merchantId || "",
-    colorPrimary: initial.colorPrimary || "#e23a7a",
-    colorSecondary: initial.colorSecondary || "#be185d",
-    colorGlobal: initial.colorGlobal || "#111111",
+    colorPrimary: initial.colorPrimary || "#5a1436",
+    colorSecondary: initial.colorSecondary || "#7a2349",
+    colorGlobal: initial.colorGlobal || "#2c1a22",
+    logoHeight: String(initial.logoHeight ?? 40),
     // সিক্রেট — খালি রাখলে আগেরটা থাকবে
     telegramBotToken: "",
     steadfastApiKey: "",
     steadfastSecretKey: "",
   });
   const [logoUrl, setLogoUrl] = useState(initial.logoUrl || "");
+  const [faviconUrl, setFaviconUrl] = useState(initial.faviconUrl || "");
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState("");
@@ -63,6 +65,22 @@ export default function SettingsForm({ initial }) {
     setUploading(false);
   }
 
+  async function uploadFavicon(file) {
+    setUploading(true);
+    setMsg("");
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const d = await res.json();
+      if (d.ok) setFaviconUrl(d.url);
+      else setMsg("❌ " + (d.error || "আইকন আপলোড ব্যর্থ"));
+    } catch {
+      setMsg("❌ আইকন আপলোড ব্যর্থ");
+    }
+    setUploading(false);
+  }
+
   async function submit(e) {
     e.preventDefault();
     setBusy(true);
@@ -71,7 +89,7 @@ export default function SettingsForm({ initial }) {
       const res = await fetch("/api/admin/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, logoUrl }),
+        body: JSON.stringify({ ...f, logoUrl, faviconUrl }),
       });
       const d = await res.json();
       if (!d.ok) throw new Error(d.error || "সেভ ব্যর্থ");
@@ -125,6 +143,43 @@ export default function SettingsForm({ initial }) {
             )}
           </div>
         </div>
+
+        {/* লোগোর সাইজ */}
+        <div>
+          <label className={lbl}>লোগোর সাইজ (উচ্চতা): {f.logoHeight}px</label>
+          <input
+            type="range"
+            min="24"
+            max="80"
+            value={f.logoHeight}
+            onChange={(e) => set("logoHeight", e.target.value)}
+            className="w-full accent-brand"
+          />
+          <p className="text-xs text-gray-400">কম–বেশি করতে স্লাইড করো (২৪–৮০px)</p>
+        </div>
+
+        {/* favicon / web icon */}
+        <div>
+          <label className={lbl}>ওয়েব আইকন (favicon — ব্রাউজার ট্যাবে)</label>
+          <div className="flex items-center gap-3">
+            {faviconUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={faviconUrl} alt="favicon" className="h-8 w-8 rounded border border-gray-200 object-contain" />
+            )}
+            <label className="cursor-pointer rounded-xl border-2 border-dashed border-gray-300 px-4 py-2 text-sm text-gray-500 hover:border-brand">
+              {uploading ? "আপলোড হচ্ছে..." : faviconUrl ? "আইকন বদলাও" : "+ আইকন আপলোড"}
+              <input type="file" accept="image/*" className="hidden"
+                onChange={(e) => e.target.files?.[0] && uploadFavicon(e.target.files[0])} />
+            </label>
+            {faviconUrl && (
+              <button type="button" onClick={() => setFaviconUrl("")} className="text-xs text-red-500 underline">
+                সরাও
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-gray-400">বর্গাকার (square) ছবি দাও, যেমন ৫১২×৫১২</p>
+        </div>
+
         <div>
           <label className={lbl}>Footer টেক্সট</label>
           <input className={inp} value={f.footerText} onChange={(e) => set("footerText", e.target.value)} />

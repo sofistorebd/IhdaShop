@@ -11,7 +11,8 @@ export default async function Footer() {
             <img
               src={site.logoUrl}
               alt={site.brandName}
-              className="h-10 w-auto max-w-[180px] object-contain"
+              style={{ height: `${site.logoHeight}px` }}
+              className="w-auto max-w-[200px] object-contain"
             />
           ) : (
             <>

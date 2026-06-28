@@ -35,8 +35,8 @@ export async function generateMetadata() {
     applicationName: site.brandName,
     manifest: "/manifest.webmanifest",
     icons: {
-      icon: "/icon-192.png",
-      apple: "/icon-192.png",
+      icon: site.faviconUrl || "/icon-192.png",
+      apple: site.faviconUrl || "/icon-192.png",
     },
     appleWebApp: { capable: true, statusBarStyle: "default", title: site.brandName },
     alternates: { canonical: "/" },
