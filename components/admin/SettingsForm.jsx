@@ -29,6 +29,7 @@ export default function SettingsForm({ initial }) {
     deliveryOutside: String(initial.delivery?.outsideDhaka ?? ""),
     telegramChatId: initial.telegramChatId || "",
     facebookPixelId: initial.facebookPixelId || "",
+    capiTestCode: initial.capiTestCode || "",
     merchantName: initial.merchantName || "",
     merchantId: initial.merchantId || "",
     colorPrimary: initial.colorPrimary || "#5a1436",
@@ -39,6 +40,7 @@ export default function SettingsForm({ initial }) {
     telegramBotToken: "",
     steadfastApiKey: "",
     steadfastSecretKey: "",
+    capiAccessToken: "",
   });
   const [logoUrl, setLogoUrl] = useState(initial.logoUrl || "");
   const [faviconUrl, setFaviconUrl] = useState(initial.faviconUrl || "");
@@ -304,6 +306,21 @@ export default function SettingsForm({ initial }) {
         <div>
           <label className={lbl}>Facebook Pixel ID (ads ট্র্যাকিং)</label>
           <input className={inp} value={f.facebookPixelId} onChange={(e) => set("facebookPixelId", e.target.value)} placeholder="1234567890" />
+        </div>
+        <div>
+          <label className={lbl}>
+            Conversions API Token (CAPI) {secretsSet.capiAccessToken && <span className="text-green-600">✓ সেট করা আছে</span>}
+          </label>
+          <input type="password" className={inp} value={f.capiAccessToken}
+            onChange={(e) => set("capiAccessToken", e.target.value)}
+            placeholder={secretsSet.capiAccessToken ? "•••••• (অপরিবর্তিত)" : "Events Manager → Settings → Generate access token"} />
+          <p className="mt-1 text-xs text-gray-500">
+            Pixel ID + এই টোকেন থাকলে অর্ডার সার্ভার থেকেও Meta-তে যাবে (iOS/ad-blocker মিস কমায়)।
+          </p>
+        </div>
+        <div>
+          <label className={lbl}>CAPI Test Event Code (যাচাইয়ের সময়, পরে খালি)</label>
+          <input className={inp} value={f.capiTestCode} onChange={(e) => set("capiTestCode", e.target.value)} placeholder="যেমন: TEST12345" />
         </div>
         <div>
           <label className={lbl}>

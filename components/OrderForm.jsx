@@ -56,6 +56,11 @@ export default function OrderForm({ product, settings }) {
     e.preventDefault();
     if (!name || !phone || !address) return;
     setStatus("sending");
+    // একই event_id browser pixel + server CAPI দুই জায়গায় → Meta dedup করে
+    const eventId =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     try {
       const res = await fetch("/api/order", {
         method: "POST",
@@ -72,17 +77,22 @@ export default function OrderForm({ product, settings }) {
           name,
           phone,
           address,
+          eventId,
         }),
       });
       if (!res.ok) throw new Error("failed");
-      // Facebook Pixel — Purchase কনভার্সন
-      track("Purchase", {
-        value: total,
-        currency: "BDT",
-        content_name: fullName,
-        content_ids: [product.slug],
-        content_type: "product",
-      });
+      // Facebook Pixel — Purchase কনভার্সন (server CAPI-র সাথে একই eventID)
+      track(
+        "Purchase",
+        {
+          value: total,
+          currency: "BDT",
+          content_name: fullName,
+          content_ids: [product.slug],
+          content_type: "product",
+        },
+        { eventID: eventId }
+      );
       setStatus("success");
     } catch {
       setStatus("error");

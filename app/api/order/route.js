@@ -1,6 +1,7 @@
 // অর্ডার গ্রহণ → DB তে সেভ → Telegram এ নোটিফিকেশন
 import { createOrder, hasDb } from "@/lib/db";
 import { sendTelegram, formatOrder } from "@/lib/telegram";
+import { sendPurchase } from "@/lib/fb-capi";
 
 export async function POST(req) {
   let data;
@@ -34,6 +35,22 @@ export async function POST(req) {
     await sendTelegram(formatOrder({ ...data, ...saved }));
   } catch (err) {
     console.error("Telegram ব্যর্থ:", err);
+  }
+
+  // Meta Conversions API — server-side Purchase (browser pixel-এর সাথে dedup)
+  try {
+    const xff = req.headers.get("x-forwarded-for") || "";
+    await sendPurchase({
+      order: { ...data, ...saved },
+      eventId: data.eventId, // browser pixel-এর একই event_id
+      clientIp: xff.split(",")[0].trim(),
+      userAgent: req.headers.get("user-agent") || "",
+      fbp: req.cookies.get("_fbp")?.value,
+      fbc: req.cookies.get("_fbc")?.value,
+      sourceUrl: req.headers.get("referer") || "",
+    });
+  } catch (err) {
+    console.error("CAPI ব্যর্থ:", err);
   }
 
   return Response.json({ ok: true, id: saved?.id ?? null });
