@@ -35,6 +35,7 @@ DEFAULT_FIXES=(
   4aba265   # remove default favicon.ico so admin favicon applies
   79c45fa   # admin navbar light bg fix
   c3b9b31   # Meta Conversions API (server Purchase + browser dedup)
+  6336f7c   # product images: client-side Blob upload (bypass 4.5MB limit)
 )
 
 CLIENT_URL="${1:-}"
