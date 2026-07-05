@@ -38,6 +38,7 @@ DEFAULT_FIXES=(
   6336f7c   # product images: client-side Blob upload (bypass 4.5MB limit)
   e34b5f6   # PWA: separate admin manifest (install from /admin opens admin)
   300f544   # fix: exclude admin manifest from auth middleware
+  27a399c   # PWA manifests: explicit id (Android same-origin multi-install fix)
 )
 
 CLIENT_URL="${1:-}"
