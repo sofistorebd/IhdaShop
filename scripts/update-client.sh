@@ -39,6 +39,7 @@ DEFAULT_FIXES=(
   e34b5f6   # PWA: separate admin manifest (install from /admin opens admin)
   300f544   # fix: exclude admin manifest from auth middleware
   27a399c   # PWA manifests: explicit id (Android same-origin multi-install fix)
+  1b52e3c   # audit: 11 fixes (review/logo blob upload, JSON-LD image, auth, etc.)
 )
 
 CLIENT_URL="${1:-}"
