@@ -4,8 +4,12 @@ import { ADMIN_COOKIE, sessionToken } from "@/lib/auth";
 export async function proxy(req) {
   const { pathname } = req.nextUrl;
 
-  // লগইন রুট সবসময় খোলা
-  if (pathname === "/admin/login" || pathname === "/api/admin/login") {
+  // লগইন রুট ও PWA manifest সবসময় খোলা (manifest fetch কুকি ছাড়াই হয়)
+  if (
+    pathname === "/admin/login" ||
+    pathname === "/api/admin/login" ||
+    pathname === "/admin/manifest.webmanifest"
+  ) {
     return NextResponse.next();
   }
 
