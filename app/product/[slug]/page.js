@@ -61,7 +61,14 @@ export default async function ProductPage({ params }) {
     description: product.short,
     sku: product.slug,
     brand: { "@type": "Brand", name: site.brandName },
-    ...(product.image ? { image: `${base}${product.image}` } : {}),
+    ...(product.image
+      ? {
+          // আপলোড করা ছবি পুরো URL (Blob), পুরোনো ছবি local path — দুটোই সামলায়
+          image: product.image.startsWith("http")
+            ? product.image
+            : `${base}${product.image}`,
+        }
+      : {}),
     offers: {
       "@type": "Offer",
       url: `${base}/product/${product.slug}`,

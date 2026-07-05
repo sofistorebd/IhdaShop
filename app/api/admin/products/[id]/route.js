@@ -24,8 +24,11 @@ export async function PUT(req, { params }) {
     }
     revalidatePath("/", "layout");
     return Response.json({ ok: true, product });
-  } catch {
-    return Response.json({ ok: false, error: "আপডেট ব্যর্থ" }, { status: 500 });
+  } catch (err) {
+    const msg = String(err?.message || "").includes("duplicate")
+      ? "এই slug অন্য প্রোডাক্টে আগে থেকেই আছে"
+      : "আপডেট ব্যর্থ";
+    return Response.json({ ok: false, error: msg }, { status: 500 });
   }
 }
 

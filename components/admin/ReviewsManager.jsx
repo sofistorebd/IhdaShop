@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { upload } from "@vercel/blob/client";
 
 export default function ReviewsManager({ initial }) {
   const [reviews, setReviews] = useState(initial);
@@ -13,23 +14,22 @@ export default function ReviewsManager({ initial }) {
     setMsg("");
     for (const file of Array.from(fileList)) {
       try {
-        const fd = new FormData();
-        fd.append("file", file);
-        const up = await fetch("/api/admin/upload", { method: "POST", body: fd });
-        const ud = await up.json();
-        if (!ud.ok) {
-          setMsg("❌ " + (ud.error || "আপলোড ব্যর্থ"));
-          continue;
-        }
+        // ব্রাউজার থেকে সরাসরি Blob-এ → বড় স্ক্রিনশটেও 4.5MB সীমা লাগে না
+        const safe = (file.name || "review").replace(/[^a-zA-Z0-9._-]/g, "_");
+        const blob = await upload(`reviews/${Date.now()}-${safe}`, file, {
+          access: "public",
+          handleUploadUrl: "/api/admin/blob-upload",
+        });
         const res = await fetch("/api/admin/reviews", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageUrl: ud.url }),
+          body: JSON.stringify({ imageUrl: blob.url }),
         });
         const d = await res.json();
         if (d.ok) setReviews((p) => [...p, d.review]);
-      } catch {
-        setMsg("❌ আপলোড ব্যর্থ");
+        else setMsg("❌ " + (d.error || "যোগ ব্যর্থ"));
+      } catch (err) {
+        setMsg("❌ " + (err?.message || "আপলোড ব্যর্থ"));
       }
     }
     setUploading(false);

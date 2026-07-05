@@ -102,12 +102,22 @@ export default function OrdersTable({ initialOrders, steadfastReady }) {
   }
 
   async function changeStatus(id, status) {
+    const prevStatus = orders.find((o) => o.id === id)?.status;
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
-    await fetch("/api/admin/status", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status }),
-    });
+    try {
+      const res = await fetch("/api/admin/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      // ব্যর্থ হলে আগের status ফিরিয়ে আনি — নাহলে UI ভুল দেখায়
+      setOrders((prev) =>
+        prev.map((o) => (o.id === id ? { ...o, status: prevStatus } : o))
+      );
+      setMsg("❌ স্ট্যাটাস সেভ হয়নি — আবার চেষ্টা করো।");
+    }
   }
 
   if (!orders.length) {

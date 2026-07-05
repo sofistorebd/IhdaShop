@@ -89,7 +89,7 @@ export default function ProductDetail({ product }) {
                 {bdt(product.oldPrice)}
               </span>
             )}
-            {product.oldPrice && (
+            {product.oldPrice > product.price && (
               <span className="mb-1 rounded-md bg-brand-light px-2 py-0.5 text-sm font-semibold text-brand-dark">
                 {Math.round((1 - product.price / product.oldPrice) * 100)}% ছাড়
               </span>

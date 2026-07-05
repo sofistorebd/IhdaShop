@@ -13,8 +13,9 @@ export async function proxy(req) {
     return NextResponse.next();
   }
 
+  const token = await sessionToken(); // সিক্রেট সেট না থাকলে null → কেউ ঢুকতে পারবে না
   const cookie = req.cookies.get(ADMIN_COOKIE)?.value;
-  const ok = cookie && cookie === (await sessionToken());
+  const ok = Boolean(token) && cookie === token;
 
   if (!ok) {
     if (pathname.startsWith("/api/")) {

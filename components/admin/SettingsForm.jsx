@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { upload } from "@vercel/blob/client";
 
 // মডিউল-লেভেল (কম্পোনেন্টের বাইরে) — নাহলে প্রতি রেন্ডারে re-mount হয়ে স্ক্রল/ফোকাস হারায়
 function Section({ title, children }) {
@@ -51,37 +52,24 @@ export default function SettingsForm({ initial }) {
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
   const secretsSet = initial.secretsSet || {};
 
-  async function uploadLogo(file) {
+  // ব্রাউজার থেকে সরাসরি Blob-এ (server-এর 4.5MB সীমা এড়ায়)
+  async function uploadBranding(file, kind, setUrl) {
     setUploading(true);
     setMsg("");
-    const fd = new FormData();
-    fd.append("file", file);
     try {
-      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-      const d = await res.json();
-      if (d.ok) setLogoUrl(d.url);
-      else setMsg("❌ " + (d.error || "লোগো আপলোড ব্যর্থ"));
-    } catch {
-      setMsg("❌ লোগো আপলোড ব্যর্থ");
+      const safe = (file.name || kind).replace(/[^a-zA-Z0-9._-]/g, "_");
+      const blob = await upload(`branding/${Date.now()}-${safe}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/admin/blob-upload",
+      });
+      setUrl(blob.url);
+    } catch (err) {
+      setMsg("❌ " + (err?.message || "আপলোড ব্যর্থ"));
     }
     setUploading(false);
   }
-
-  async function uploadFavicon(file) {
-    setUploading(true);
-    setMsg("");
-    const fd = new FormData();
-    fd.append("file", file);
-    try {
-      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-      const d = await res.json();
-      if (d.ok) setFaviconUrl(d.url);
-      else setMsg("❌ " + (d.error || "আইকন আপলোড ব্যর্থ"));
-    } catch {
-      setMsg("❌ আইকন আপলোড ব্যর্থ");
-    }
-    setUploading(false);
-  }
+  const uploadLogo = (file) => uploadBranding(file, "logo", setLogoUrl);
+  const uploadFavicon = (file) => uploadBranding(file, "favicon", setFaviconUrl);
 
   async function submit(e) {
     e.preventDefault();
