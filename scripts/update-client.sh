@@ -36,6 +36,7 @@ DEFAULT_FIXES=(
   79c45fa   # admin navbar light bg fix
   c3b9b31   # Meta Conversions API (server Purchase + browser dedup)
   6336f7c   # product images: client-side Blob upload (bypass 4.5MB limit)
+  e34b5f6   # PWA: separate admin manifest (install from /admin opens admin)
 )
 
 CLIENT_URL="${1:-}"
