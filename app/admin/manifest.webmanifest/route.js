@@ -6,6 +6,7 @@ import { getSettings } from "@/lib/settings";
 export async function GET() {
   const s = await getSettings();
   const manifest = {
+    id: "/admin/",
     name: `${s.brandName} — অ্যাডমিন`,
     short_name: "অ্যাডমিন",
     description: "অর্ডার, প্রোডাক্ট ও সেটিংস পরিচালনা",

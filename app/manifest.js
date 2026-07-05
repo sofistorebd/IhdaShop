@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 export default async function manifest() {
   const s = await getSettings();
   return {
+    id: "/",
     name: s.brandName,
     short_name: s.brandName,
     description: s.description,
