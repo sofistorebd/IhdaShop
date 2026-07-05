@@ -37,6 +37,7 @@ DEFAULT_FIXES=(
   c3b9b31   # Meta Conversions API (server Purchase + browser dedup)
   6336f7c   # product images: client-side Blob upload (bypass 4.5MB limit)
   e34b5f6   # PWA: separate admin manifest (install from /admin opens admin)
+  300f544   # fix: exclude admin manifest from auth middleware
 )
 
 CLIENT_URL="${1:-}"
