@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { upload } from "@vercel/blob/client";
 
 function slugify(s) {
   return s
@@ -43,13 +42,13 @@ export default function ProductForm({ initial, id }) {
     setError("");
     for (const file of Array.from(fileList)) {
       try {
-        // ব্রাউজার থেকে সরাসরি Vercel Blob-এ → বড় ছবিতেও 4.5MB সীমা লাগে না
-        const safe = (file.name || "image").replace(/[^a-zA-Z0-9._-]/g, "_");
-        const blob = await upload(`products/${Date.now()}-${safe}`, file, {
-          access: "public",
-          handleUploadUrl: "/api/admin/blob-upload",
-        });
-        setImages((p) => [...p, blob.url]);
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("prefix", "product");
+        const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+        const d = await res.json();
+        if (d.ok) setImages((p) => [...p, d.url]);
+        else setError(d.error || "আপলোড ব্যর্থ");
       } catch (err) {
         setError(err?.message || "আপলোড ব্যর্থ");
       }

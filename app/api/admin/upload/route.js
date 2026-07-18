@@ -1,28 +1,17 @@
-// ছবি আপলোড → Vercel Blob → public URL
-import { put } from "@vercel/blob";
+// ছবি আপলোড → VPS local disk → public URL (/api/media/...)
+// VPS-এ Node server চলে বলে বড় ছবিতেও 4.5MB সীমা নেই।
+import { saveUpload } from "@/lib/storage";
 
 export async function POST(req) {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    return Response.json(
-      {
-        ok: false,
-        error:
-          "ছবি আপলোড চালু নেই। Vercel এ Storage → Blob যোগ করো, অথবা ছবির URL সরাসরি পেস্ট করো।",
-      },
-      { status: 400 }
-    );
-  }
   try {
     const form = await req.formData();
     const file = form.get("file");
     if (!file || typeof file === "string") {
       return Response.json({ ok: false, error: "ফাইল নেই" }, { status: 400 });
     }
-    const safe = (file.name || "image").replace(/[^a-zA-Z0-9._-]/g, "_");
-    const blob = await put(`products/${Date.now()}-${safe}`, file, {
-      access: "public",
-    });
-    return Response.json({ ok: true, url: blob.url });
+    const prefix = form.get("prefix") || "img";
+    const url = await saveUpload(file, String(prefix));
+    return Response.json({ ok: true, url });
   } catch (err) {
     return Response.json(
       { ok: false, error: err?.message || "আপলোড ব্যর্থ" },
