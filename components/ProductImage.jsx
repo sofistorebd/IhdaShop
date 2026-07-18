@@ -2,7 +2,7 @@ import Image from "next/image";
 
 // ছবি থাকলে অপ্টিমাইজড next/image দেখাবে, না থাকলে সুন্দর placeholder।
 // প্যারেন্টের একটা নির্দিষ্ট সাইজ থাকতে হবে (aspect-* / h-/w-)।
-export default function ProductImage({ src, name, className = "" }) {
+export default function ProductImage({ src, name, className = "", priority = false }) {
   if (src) {
     return (
       <span className="relative block h-full w-full">
@@ -10,8 +10,9 @@ export default function ProductImage({ src, name, className = "" }) {
           src={src}
           alt={name || ""}
           fill
-          quality={82}
+          quality={78}
           sizes="(max-width: 768px) 92vw, 560px"
+          priority={priority}
           className={`object-cover ${className}`}
         />
       </span>

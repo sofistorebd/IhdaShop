@@ -53,7 +53,7 @@ export default function Hero({ products = [], settings }) {
                     : "scale-105 opacity-0"
                 }`}
               >
-                <ProductImage src={p.image} name={p.name} />
+                <ProductImage src={p.image} name={p.name} priority={idx === 0} />
               </div>
             ))}
 
