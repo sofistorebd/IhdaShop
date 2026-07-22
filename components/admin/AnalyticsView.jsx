@@ -64,7 +64,7 @@ function Ranked({ rows, render, empty }) {
   );
 }
 
-export default function AnalyticsView({ visitors, orders }) {
+export default function AnalyticsView({ visitors, orders, rangeLabel = "৩০ দিন" }) {
   const v = visitors || {};
   const o = orders || {};
   const st = o.status || {};
@@ -80,22 +80,22 @@ export default function AnalyticsView({ visitors, orders }) {
           value={bn(v.live)}
         />
         <StatCard icon="👣" label="আজকের ভিজিট" value={bn(v.pvToday)} />
-        <StatCard icon="👤" tone="ink" label="আজ ইউনিক ভিজিটর" value={bn(v.uvToday)} />
-        <StatCard icon="📅" tone="amber" label="৩০ দিনে ভিজিটর" value={bn(v.uv30d)} />
+        <StatCard icon="👤" tone="ink" label={`${rangeLabel}-এ ভিজিট`} value={bn(v.pvRange)} />
+        <StatCard icon="📅" tone="amber" label={`${rangeLabel}-এ ইউনিক ভিজিটর`} value={bn(v.uvRange)} />
       </div>
 
       {/* বিক্রি */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard icon="💰" tone="green" label="আজকের বিক্রি" value={taka(o.revToday)} />
         <StatCard icon="📦" label="আজকের অর্ডার" value={bn(o.ordersToday)} />
-        <StatCard icon="🧮" tone="ink" label="গড় অর্ডার (৩০দি.)" value={taka(o.aov)} />
-        <StatCard icon="🏦" tone="amber" label="৩০ দিনে বিক্রি" value={taka(o.rev30)} />
+        <StatCard icon="🧮" tone="ink" label={`গড় অর্ডার (${rangeLabel})`} value={taka(o.aov)} />
+        <StatCard icon="🏦" tone="amber" label={`${rangeLabel}-এ বিক্রি`} value={taka(o.revRange)} />
       </div>
 
       {/* চার্ট: ভিজিটর + অর্ডার */}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="p-4">
-          <h3 className="mb-3 text-sm font-semibold text-ink">শেষ ১৪ দিনের ভিজিটর</h3>
+          <h3 className="mb-3 text-sm font-semibold text-ink">ভিজিটর ({rangeLabel})</h3>
           <BarChart
             data={v.daily || []}
             keys={["pv", "uv"]}
@@ -104,7 +104,7 @@ export default function AnalyticsView({ visitors, orders }) {
           />
         </Card>
         <Card className="p-4">
-          <h3 className="mb-3 text-sm font-semibold text-ink">শেষ ১৪ দিনের অর্ডার</h3>
+          <h3 className="mb-3 text-sm font-semibold text-ink">অর্ডার ({rangeLabel})</h3>
           <BarChart
             data={o.daily || []}
             keys={["orders"]}
@@ -116,7 +116,7 @@ export default function AnalyticsView({ visitors, orders }) {
 
       {/* অর্ডার স্ট্যাটাস */}
       <Card className="p-4">
-        <h3 className="mb-3 text-sm font-semibold text-ink">অর্ডার স্ট্যাটাস</h3>
+        <h3 className="mb-3 text-sm font-semibold text-ink">অর্ডার স্ট্যাটাস ({rangeLabel})</h3>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {[
             ["⏳", "পেন্ডিং", st.pending],
@@ -137,7 +137,7 @@ export default function AnalyticsView({ visitors, orders }) {
       {/* সোর্স + টপ প্রোডাক্ট + টপ পেজ */}
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-4">
-          <h3 className="mb-3 text-sm font-semibold text-ink">ট্রাফিক সোর্স (৩০দি.)</h3>
+          <h3 className="mb-3 text-sm font-semibold text-ink">ট্রাফিক সোর্স ({rangeLabel})</h3>
           <Ranked
             rows={v.sources}
             empty="এখনো ভিজিট নেই"
@@ -145,7 +145,7 @@ export default function AnalyticsView({ visitors, orders }) {
           />
         </Card>
         <Card className="p-4">
-          <h3 className="mb-3 text-sm font-semibold text-ink">বেস্ট সেলিং (৩০দি.)</h3>
+          <h3 className="mb-3 text-sm font-semibold text-ink">বেস্ট সেলিং ({rangeLabel})</h3>
           <Ranked
             rows={o.top}
             empty="এখনো অর্ডার নেই"
@@ -153,7 +153,7 @@ export default function AnalyticsView({ visitors, orders }) {
           />
         </Card>
         <Card className="p-4">
-          <h3 className="mb-3 text-sm font-semibold text-ink">জনপ্রিয় পেজ (৩০দি.)</h3>
+          <h3 className="mb-3 text-sm font-semibold text-ink">জনপ্রিয় পেজ ({rangeLabel})</h3>
           <Ranked
             rows={v.topPages}
             empty="এখনো ভিজিট নেই"
