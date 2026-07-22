@@ -3,6 +3,7 @@ import { Hind_Siliguri } from "next/font/google";
 import "./globals.css";
 import { getSettings } from "@/lib/settings";
 import ServiceWorker from "@/components/ServiceWorker";
+import TrackView from "@/components/TrackView";
 
 export async function generateViewport() {
   const site = await getSettings();
@@ -114,6 +115,7 @@ fbq('init','${site.facebookPixelId}');fbq('track','PageView');`}
         )}
         {children}
         <ServiceWorker />
+        <TrackView />
       </body>
     </html>
   );

@@ -6,6 +6,7 @@ const TABS = [
   { href: "/admin", key: "orders", label: "অর্ডার", icon: "🧾" },
   { href: "/admin/products", key: "products", label: "প্রোডাক্ট", icon: "🛍️" },
   { href: "/admin/reviews", key: "reviews", label: "রিভিউ", icon: "⭐" },
+  { href: "/admin/analytics", key: "analytics", label: "অ্যানালিটিক্স", icon: "📈" },
   { href: "/admin/settings", key: "settings", label: "সেটিংস", icon: "⚙️" },
 ];
 
