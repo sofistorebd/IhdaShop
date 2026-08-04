@@ -9,9 +9,9 @@ export async function GET() {
 
 export async function POST(req) {
   const data = await req.json().catch(() => null);
-  if (!data?.name || !data?.slug) {
+  if (!data?.name) {
     return Response.json(
-      { ok: false, error: "নাম ও slug দরকার" },
+      { ok: false, error: "নাম দরকার" },
       { status: 400 }
     );
   }

@@ -14,8 +14,8 @@ export async function GET(req, { params }) {
 export async function PUT(req, { params }) {
   const { id } = await params;
   const data = await req.json().catch(() => null);
-  if (!data?.name || !data?.slug) {
-    return Response.json({ ok: false, error: "নাম ও slug দরকার" }, { status: 400 });
+  if (!data?.name) {
+    return Response.json({ ok: false, error: "নাম দরকার" }, { status: 400 });
   }
   try {
     const product = await updateProduct(Number(id), data);

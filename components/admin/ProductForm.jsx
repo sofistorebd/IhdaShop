@@ -119,8 +119,9 @@ export default function ProductForm({ initial, id }) {
             onChange={(e) => { set("name", e.target.value); if (!id && !f.slug) set("slug", slugify(e.target.value)); }} />
         </div>
         <div>
-          <label className={lbl}>Slug (URL) *</label>
-          <input className={inp} value={f.slug} onChange={(e) => set("slug", e.target.value)} placeholder="haya-classic" />
+          <label className={lbl}>Slug (URL) <span className="font-normal text-gray-400">— ঐচ্ছিক</span></label>
+          <input className={inp} value={f.slug} onChange={(e) => set("slug", e.target.value)} placeholder="নাম থেকে অটো তৈরি হবে" />
+          <p className="mt-1 text-xs text-gray-400">খালি রাখলে নাম থেকে অটো ও ইউনিক slug তৈরি হবে।</p>
         </div>
       </div>
 
