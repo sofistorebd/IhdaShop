@@ -4,6 +4,16 @@ import { useRef, useState } from "react";
 import ProductImage from "./ProductImage";
 import { track } from "@/lib/fbpixel";
 
+// বাংলাদেশি মোবাইল: 11 ডিজিট, 01 দিয়ে শুরু (01XXXXXXXXX)। +880/880 থাকলেও ধরে।
+function normalizePhone(p) {
+  let d = String(p || "").replace(/\D/g, "");
+  if (d.startsWith("88")) d = d.slice(2);
+  return d;
+}
+function validPhone(p) {
+  return /^01\d{9}$/.test(normalizePhone(p));
+}
+
 export default function OrderForm({ product, settings }) {
   const checkoutFired = useRef(false);
   const site = settings;
@@ -21,6 +31,7 @@ export default function OrderForm({ product, settings }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [phoneErr, setPhoneErr] = useState("");
   const [status, setStatus] = useState("idle"); // idle | sending | success | error
 
   const variant = variants[vIdx];
@@ -55,6 +66,12 @@ export default function OrderForm({ product, settings }) {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!name || !phone || !address) return;
+    // ফোন ফরম্যাট ঠিক না থাকলে অর্ডার তৈরি হবে না
+    if (!validPhone(phone)) {
+      setPhoneErr("সঠিক ১১ ডিজিটের মোবাইল নাম্বার দিন (যেমন 01712345678)");
+      return;
+    }
+    setPhoneErr("");
     setStatus("sending");
     // একই event_id browser pixel + server CAPI দুই জায়গায় → Meta dedup করে
     const eventId =
@@ -286,14 +303,26 @@ export default function OrderForm({ product, settings }) {
               required
               className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand"
             />
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="মোবাইল নাম্বার"
-              required
-              inputMode="tel"
-              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand"
-            />
+            <div>
+              <input
+                value={phone}
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  if (phoneErr) setPhoneErr("");
+                }}
+                placeholder="মোবাইল নাম্বার (১১ ডিজিট, যেমন 01712345678)"
+                required
+                inputMode="tel"
+                className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none ${
+                  phoneErr
+                    ? "border-red-400 focus:border-red-500"
+                    : "border-gray-200 focus:border-brand"
+                }`}
+              />
+              {phoneErr && (
+                <p className="mt-1 text-xs font-medium text-red-500">⚠️ {phoneErr}</p>
+              )}
+            </div>
             <textarea
               value={address}
               onChange={(e) => setAddress(e.target.value)}

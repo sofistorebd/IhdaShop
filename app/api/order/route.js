@@ -18,6 +18,15 @@ export async function POST(req) {
     );
   }
 
+  // ফোন যাচাই — বাংলাদেশি ১১ ডিজিট (01XXXXXXXXX), +880/880 থাকলেও ঠিক
+  const phoneDigits = String(data.phone).replace(/\D/g, "").replace(/^88/, "");
+  if (!/^01\d{9}$/.test(phoneDigits)) {
+    return Response.json(
+      { ok: false, error: "invalid phone" },
+      { status: 400 }
+    );
+  }
+
   let saved = data;
   try {
     if (hasDb()) {
