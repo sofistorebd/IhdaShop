@@ -10,12 +10,19 @@ const STATUS_LABEL = {
   cancelled: { text: "বাতিল", cls: "bg-red-100 text-red-700" },
 };
 
-export default function OrdersTable({ initialOrders, steadfastReady }) {
+export default function OrdersTable({ initialOrders, steadfastReady, delivery }) {
   const [orders, setOrders] = useState(initialOrders);
   const [busy, setBusy] = useState(null);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [selected, setSelected] = useState(() => new Set());
+  const [editing, setEditing] = useState(null); // যে অর্ডারটি এডিট হচ্ছে
+
+  function onSaved(updated) {
+    setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+    setEditing(null);
+    setMsg(`✅ অর্ডার #${updated.id} আপডেট হয়েছে`);
+  }
 
   const bdt = (n) => "৳" + Number(n).toLocaleString("bn-BD");
 
@@ -206,6 +213,12 @@ export default function OrdersTable({ initialOrders, steadfastReady }) {
                     <p className="font-medium text-ink">{o.name}</p>
                     <p className="text-xs text-gray-500">{o.phone}</p>
                     <p className="mt-1 max-w-[200px] text-xs text-gray-400">{o.address}</p>
+                    <button
+                      onClick={() => setEditing(o)}
+                      className="mt-1 text-xs font-semibold text-brand hover:underline"
+                    >
+                      ✏️ এডিট
+                    </button>
                   </td>
                   <td className="px-4 py-3">
                     <p className="text-gray-700">{o.product}</p>
@@ -253,6 +266,176 @@ export default function OrdersTable({ initialOrders, steadfastReady }) {
             })}
           </tbody>
         </table>
+      </div>
+
+      {editing && (
+        <EditOrderModal
+          order={editing}
+          delivery={delivery}
+          onClose={() => setEditing(null)}
+          onSaved={onSaved}
+        />
+      )}
+    </div>
+  );
+}
+
+// ---- অর্ডার এডিট মডাল ----
+function EditOrderModal({ order, delivery, onClose, onSaved }) {
+  const dc0 = Number(order.delivery_charge) || 0;
+  const [f, setF] = useState({
+    name: order.name || "",
+    phone: order.phone || "",
+    address: order.address || "",
+    product: order.product || "",
+    size: order.size || "",
+    qty: order.qty || 1,
+    area: order.area || "",
+    deliveryCharge: dc0,
+    subtotal: (Number(order.total) || 0) - dc0, // প্রোডাক্টের দাম (ডেলিভারি বাদে)
+  });
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
+  const total = (Number(f.subtotal) || 0) + (Number(f.deliveryCharge) || 0);
+  const bdt = (n) => "৳" + Number(n).toLocaleString("bn-BD");
+
+  // এরিয়া বদলালে ডেলিভারি চার্জ অটো (সেটিংস থেকে)
+  function pickArea(area) {
+    let dc = f.deliveryCharge;
+    if (delivery) {
+      if (area === "ঢাকার ভিতরে") dc = delivery.insideDhaka;
+      else if (area === "ঢাকার বাইরে") dc = delivery.outsideDhaka;
+    }
+    setF((p) => ({ ...p, area, deliveryCharge: dc }));
+  }
+
+  async function save() {
+    if (!f.name || !f.phone || !f.address) return setErr("নাম, ফোন, ঠিকানা দরকার");
+    const digits = String(f.phone).replace(/\D/g, "").replace(/^88/, "");
+    if (!/^01\d{9}$/.test(digits)) return setErr("সঠিক ১১ ডিজিটের মোবাইল নাম্বার দিন");
+    setBusy(true);
+    setErr("");
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: f.name,
+          phone: f.phone,
+          address: f.address,
+          product: f.product,
+          size: f.size,
+          qty: Number(f.qty) || 1,
+          area: f.area,
+          deliveryCharge: Number(f.deliveryCharge) || 0,
+          total,
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok || !d.ok) throw new Error(d.error || "ব্যর্থ");
+      onSaved(d.order);
+    } catch (e) {
+      setErr("❌ " + e.message);
+      setBusy(false);
+    }
+  }
+
+  const inp = "w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand";
+  const lbl = "mb-1 block text-xs font-semibold text-gray-600";
+  const areas = ["ঢাকার ভিতরে", "ঢাকার বাইরে"];
+  if (f.area && !areas.includes(f.area)) areas.push(f.area);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4">
+      <div className="my-8 w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-bold text-ink">অর্ডার #{order.id} এডিট</h3>
+          <button onClick={onClose} className="text-xl text-gray-400 hover:text-ink">✕</button>
+        </div>
+
+        {err && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{err}</p>}
+        {order.consignment_id && (
+          <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            ⚠️ এটি কুরিয়ারে পাঠানো হয়ে গেছে — এখানে বদলালে শুধু রেকর্ডে বদলাবে, কুরিয়ারে নয়।
+          </p>
+        )}
+
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>নাম</label>
+              <input className={inp} value={f.name} onChange={(e) => set("name", e.target.value)} />
+            </div>
+            <div>
+              <label className={lbl}>ফোন</label>
+              <input className={inp} value={f.phone} onChange={(e) => set("phone", e.target.value)} inputMode="tel" />
+            </div>
+          </div>
+
+          <div>
+            <label className={lbl}>ঠিকানা</label>
+            <textarea rows={2} className={inp} value={f.address} onChange={(e) => set("address", e.target.value)} />
+          </div>
+
+          <div>
+            <label className={lbl}>প্রোডাক্ট</label>
+            <input className={inp} value={f.product} onChange={(e) => set("product", e.target.value)} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>সাইজ</label>
+              <input className={inp} value={f.size} onChange={(e) => set("size", e.target.value)} />
+            </div>
+            <div>
+              <label className={lbl}>পরিমাণ</label>
+              <input type="number" min="1" className={inp} value={f.qty} onChange={(e) => set("qty", e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>ডেলিভারি এলাকা</label>
+              <select className={inp} value={f.area} onChange={(e) => pickArea(e.target.value)}>
+                <option value="">— নির্বাচন —</option>
+                {areas.map((a) => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={lbl}>ডেলিভারি চার্জ (৳)</label>
+              <input type="number" className={inp} value={f.deliveryCharge} onChange={(e) => set("deliveryCharge", e.target.value)} />
+            </div>
+          </div>
+
+          <div>
+            <label className={lbl}>প্রোডাক্টের দাম / সাবটোটাল (৳)</label>
+            <input type="number" className={inp} value={f.subtotal} onChange={(e) => set("subtotal", e.target.value)} />
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm">
+            <span className="font-semibold text-gray-600">সর্বমোট (অটো)</span>
+            <span className="text-base font-bold text-ink">{bdt(total)}</span>
+          </div>
+        </div>
+
+        <div className="mt-5 flex gap-3">
+          <button
+            disabled={busy}
+            onClick={save}
+            className="flex-1 rounded-full bg-brand py-2.5 font-semibold text-white hover:bg-brand-dark disabled:opacity-60"
+          >
+            {busy ? "সেভ হচ্ছে..." : "সেভ করো"}
+          </button>
+          <button
+            onClick={onClose}
+            className="rounded-full border border-gray-300 px-6 py-2.5 font-semibold text-gray-600"
+          >
+            বাতিল
+          </button>
+        </div>
       </div>
     </div>
   );

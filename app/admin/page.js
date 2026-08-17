@@ -1,4 +1,5 @@
 import { listOrders, hasDb } from "@/lib/db";
+import { getSettings } from "@/lib/settings";
 import { steadfastReady } from "@/lib/steadfast";
 import OrdersTable from "@/components/admin/OrdersTable";
 import AdminNav from "@/components/admin/AdminNav";
@@ -27,6 +28,7 @@ export default async function AdminPage() {
   const bn = (n) => Number(n).toLocaleString("bn-BD");
   const bdt = (n) => "৳" + bn(n);
   const sfReady = await steadfastReady();
+  const site = await getSettings();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -51,7 +53,7 @@ export default async function AdminPage() {
         </div>
 
         <div className="mt-6">
-          <OrdersTable initialOrders={orders} steadfastReady={sfReady} />
+          <OrdersTable initialOrders={orders} steadfastReady={sfReady} delivery={site.delivery} />
         </div>
       </main>
     </div>
