@@ -57,9 +57,12 @@ export async function POST(req) {
   if (product.sizes.length && !product.sizes.includes(size)) {
     return Response.json({ ok: false, error: "invalid size" }, { status: 400 });
   }
-  const inside = "\u09a2\u09be\u0995\u09be\u09b0 \u09ad\u09bf\u09a4\u09b0";
-  const outside = "\u09a2\u09be\u0995\u09be\u09b0 \u09ac\u09be\u0987\u09b0\u09c7";
-  const area = data.area === inside ? inside : data.area === outside ? outside : null;
+  const inside = "ঢাকার ভিতরে";
+  const outside = "ঢাকার বাইরে";
+  // Match the checkout label and also accept the earlier API spelling.
+  const area = data.area === inside || data.area === "ঢাকার ভিতর"
+    ? inside
+    : data.area === outside ? outside : null;
   if (!area) {
     return Response.json({ ok: false, error: "invalid delivery area" }, { status: 400 });
   }
@@ -72,6 +75,7 @@ export async function POST(req) {
   data.price = Number(variant.price);
   data.size = size;
   data.qty = qty;
+  data.area = area;
   data.deliveryCharge = Number(deliveryCharge);
   data.total = data.price * qty + data.deliveryCharge;
   if (!data.name || !data.address) {
