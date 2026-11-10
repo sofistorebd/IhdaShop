@@ -84,6 +84,7 @@ export default function OrderForm({ product, settings }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           product: fullName,
+          variant: variant.name,
           slug: product.slug,
           price: variant.price,
           size,
