@@ -3,12 +3,24 @@
 import { useState } from "react";
 
 const STATUS_LABEL = {
+  inreview: { text: "In Review", cls: "bg-purple-100 text-purple-700" },
   pending: { text: "পেন্ডিং", cls: "bg-amber-100 text-amber-700" },
   confirmed: { text: "কনফার্মড", cls: "bg-blue-100 text-blue-700" },
   sent_to_courier: { text: "কুরিয়ারে", cls: "bg-green-100 text-green-700" },
   delivered: { text: "ডেলিভারড", cls: "bg-emerald-100 text-emerald-700" },
   cancelled: { text: "বাতিল", cls: "bg-red-100 text-red-700" },
 };
+
+function formatOrderDateTime(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return new Intl.DateTimeFormat("bn-BD", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Dhaka",
+  }).format(date);
+}
 
 export default function OrdersTable({ initialOrders, steadfastReady, delivery }) {
   const [orders, setOrders] = useState(initialOrders);
@@ -17,6 +29,8 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
   const [msg, setMsg] = useState("");
   const [selected, setSelected] = useState(() => new Set());
   const [editing, setEditing] = useState(null); // যে অর্ডারটি এডিট হচ্ছে
+  const reviewOrders = orders.filter((o) => o.status === "inreview");
+  const activeOrders = orders.filter((o) => o.status !== "inreview");
 
   function onSaved(updated) {
     setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
@@ -35,7 +49,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
   }
   function toggleAll() {
     setSelected((prev) =>
-      prev.size === orders.length ? new Set() : new Set(orders.map((o) => o.id))
+      prev.size === activeOrders.length ? new Set() : new Set(activeOrders.map((o) => o.id))
     );
   }
 
@@ -135,7 +149,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
     );
   }
 
-  const allChecked = selected.size === orders.length;
+  const allChecked = activeOrders.length > 0 && selected.size === activeOrders.length;
 
   return (
     <div>
@@ -144,6 +158,27 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
       )}
 
       {/* bulk অ্যাকশন বার */}
+      {reviewOrders.length > 0 && (
+        <section className="mb-5 rounded-2xl border border-purple-200 bg-purple-50 p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="text-base font-bold text-purple-900">In Review</h2>
+            <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">{reviewOrders.length} pending verification</span>
+          </div>
+          <div className="space-y-2">
+            {reviewOrders.map((o) => (
+              <div key={o.id} className="flex flex-wrap items-center gap-3 rounded-xl bg-white px-3 py-3 text-sm shadow-sm">
+                <span className="font-semibold text-purple-900">#{o.id}</span>
+                <span className="font-medium text-ink">{o.name}</span>
+                <span className="text-gray-600">{o.phone}</span>
+                <span className="min-w-[180px] flex-1 text-gray-600">{o.product}</span>
+                <span className="text-xs text-gray-500">{formatOrderDateTime(o.created_at)}</span>
+                <button onClick={() => changeStatus(o.id, "pending")} className="rounded-full bg-purple-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-purple-800">Confirm -&gt; Pending</button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {selected.size > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-brand bg-brand-light px-4 py-2.5">
           <span className="text-sm font-semibold text-brand-dark">
@@ -186,6 +221,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
                 />
               </th>
               <th className="px-4 py-3">#</th>
+              <th className="px-4 py-3">{"\u09a4\u09be\u09b0\u09bf\u0996 \u0993 \u09b8\u09ae\u09af\u09bc"}</th>
               <th className="px-4 py-3">গ্রাহক</th>
               <th className="px-4 py-3">প্রোডাক্ট</th>
               <th className="px-4 py-3">মোট</th>
@@ -194,7 +230,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {orders.map((o) => {
+            {activeOrders.map((o) => {
               const st = STATUS_LABEL[o.status] || STATUS_LABEL.pending;
               const checked = selected.has(o.id);
               return (
@@ -209,6 +245,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
                     />
                   </td>
                   <td className="px-4 py-3 font-semibold text-gray-700">{o.id}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500">{formatOrderDateTime(o.created_at)}</td>
                   <td className="px-4 py-3">
                     <p className="font-medium text-ink">{o.name}</p>
                     <p className="text-xs text-gray-500">{o.phone}</p>

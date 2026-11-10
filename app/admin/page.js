@@ -19,11 +19,13 @@ export default async function AdminPage() {
     }
   }
 
+  const visibleOrders = orders.filter((o) => o.status !== "inreview");
+
   const stats = {
-    total: orders.length,
-    pending: orders.filter((o) => o.status === "pending").length,
-    sent: orders.filter((o) => o.status === "sent_to_courier").length,
-    revenue: orders.reduce((s, o) => s + (Number(o.total) || 0), 0),
+    total: visibleOrders.length,
+    pending: visibleOrders.filter((o) => o.status === "pending").length,
+    sent: visibleOrders.filter((o) => o.status === "sent_to_courier").length,
+    revenue: visibleOrders.reduce((s, o) => s + (Number(o.total) || 0), 0),
   };
   const bn = (n) => Number(n).toLocaleString("bn-BD");
   const bdt = (n) => "৳" + bn(n);
