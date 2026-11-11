@@ -26,6 +26,7 @@ function formatOrderDateTime(value) {
 export default function OrdersTable({ initialOrders, steadfastReady, delivery }) {
   const router = useRouter();
   const [orders, setOrders] = useState(initialOrders);
+  const [activeTab, setActiveTab] = useState("inreview");
   const [statusBusy, setStatusBusy] = useState(null);
   const [busy, setBusy] = useState(null);
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -33,7 +34,30 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
   const [selected, setSelected] = useState(() => new Set());
   const [editing, setEditing] = useState(null); // যে অর্ডারটি এডিট হচ্ছে
   const reviewOrders = orders.filter((o) => o.status === "inreview");
-  const activeOrders = orders.filter((o) => o.status !== "inreview");
+  const activeOrders = orders.filter((o) => o.status === activeTab && o.status !== "inreview");
+  const actionsBusy = statusBusy !== null || busy !== null || bulkBusy;
+  const tabStatuses = Object.keys(STATUS_LABEL);
+
+  function selectTab(status) {
+    if (actionsBusy) return;
+    setActiveTab(status);
+    setSelected(new Set());
+    setMsg("");
+  }
+
+  function onTabKeyDown(event, status) {
+    const index = tabStatuses.indexOf(status);
+    let next;
+    if (event.key === "ArrowRight") next = (index + 1) % tabStatuses.length;
+    else if (event.key === "ArrowLeft") next = (index - 1 + tabStatuses.length) % tabStatuses.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = tabStatuses.length - 1;
+    else return;
+    event.preventDefault();
+    if (actionsBusy) return;
+    selectTab(tabStatuses[next]);
+    event.currentTarget.parentElement.querySelectorAll('[role="tab"]')[next]?.focus();
+  }
 
   function onSaved(updated) {
     setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
@@ -57,6 +81,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
   }
 
   function applyResults(results) {
+    setSelected(new Set());
     setOrders((prev) =>
       prev.map((o) => {
         const r = results.find((x) => x.id === o.id && x.ok && x.consignment_id);
@@ -93,7 +118,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
   }
 
   async function bulkSend() {
-    const ids = [...selected];
+    const ids = activeOrders.filter((o) => selected.has(o.id)).map((o) => o.id);
     if (!ids.length) return;
     setBulkBusy(true);
     setMsg("");
@@ -115,7 +140,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
   }
 
   function printLabels() {
-    const ids = orders
+    const ids = activeOrders
       .filter((o) => selected.has(o.id) && o.consignment_id)
       .map((o) => o.id);
     if (!ids.length) {
@@ -139,7 +164,9 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
       const result = await res.json();
       if (!res.ok || !result.ok) throw new Error();
       setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
+      setSelected(new Set());
       if (prevStatus === "inreview" && status === "pending") {
+        setActiveTab("pending");
         setMsg(`✅ অর্ডার #${id} যাচাই হয়েছে এবং Pending তালিকায় যোগ হয়েছে।`);
       }
       router.refresh();
@@ -150,24 +177,42 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
     }
   }
 
-  if (!orders.length) {
-    return (
-      <div className="rounded-2xl border border-gray-100 bg-white p-10 text-center text-gray-500">
-        এখনো কোনো অর্ডার নেই।
-      </div>
-    );
-  }
-
-  const allChecked = activeOrders.length > 0 && selected.size === activeOrders.length;
+  const allChecked = activeOrders.length > 0 && activeOrders.every((o) => selected.has(o.id));
 
   return (
     <div>
+      <div role="tablist" aria-label="অর্ডারের ধাপ" className="mb-4 flex gap-2 overflow-x-auto pb-2">
+        {Object.entries(STATUS_LABEL).map(([status, label]) => (
+          <button
+            key={status}
+            type="button"
+            role="tab"
+            id={`order-tab-${status}`}
+            aria-selected={activeTab === status}
+            aria-controls={`order-panel-${status}`}
+            tabIndex={activeTab === status ? 0 : -1}
+            disabled={actionsBusy}
+            onClick={() => selectTab(status)}
+            onKeyDown={(event) => onTabKeyDown(event, status)}
+            className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:opacity-50 ${activeTab === status ? "border-emerald-500 bg-emerald-50 text-emerald-800" : "border-gray-200 bg-white text-gray-600 hover:border-emerald-300 hover:text-emerald-800"}`}
+          >
+            {label.text}
+            <span className="rounded-full bg-black/5 px-2 py-0.5 text-xs">{orders.filter((o) => o.status === status).length.toLocaleString("bn-BD")}</span>
+          </button>
+        ))}
+      </div>
       {msg && (
         <div role="status" className="mb-3 rounded-xl bg-ink px-4 py-2 text-sm text-white">{msg}</div>
       )}
 
-      {/* bulk অ্যাকশন বার */}
-      {reviewOrders.length > 0 && (
+      <div role="tabpanel" id={`order-panel-${activeTab}`} aria-labelledby={`order-tab-${activeTab}`} tabIndex={0}>
+      {(activeTab === "inreview" ? reviewOrders.length : activeOrders.length) === 0 && (
+        <div className="rounded-2xl border border-gray-100 bg-white p-10 text-center text-gray-500">
+          {STATUS_LABEL[activeTab].text} তালিকায় কোনো অর্ডার নেই।
+        </div>
+      )}
+
+      {activeTab === "inreview" && reviewOrders.length > 0 && (
         <section className="mb-5 rounded-2xl border border-purple-200 bg-purple-50 p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="text-base font-bold text-purple-900">In Review</h2>
@@ -216,7 +261,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
         </section>
       )}
 
-      {selected.size > 0 && (
+      {activeTab !== "inreview" && selected.size > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-brand bg-brand-light px-4 py-2.5">
           <span className="text-sm font-semibold text-brand-dark">
             {selected.size.toLocaleString("bn-BD")}টি নির্বাচিত
@@ -244,6 +289,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
         </div>
       )}
 
+      {activeTab !== "inreview" && activeOrders.length > 0 && (
       <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
         <table className="w-full min-w-[880px] text-left text-sm">
           <thead className="bg-gray-50 text-xs uppercase text-gray-500">
@@ -341,6 +387,8 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
             })}
           </tbody>
         </table>
+      </div>
+      )}
       </div>
 
       {editing && (
