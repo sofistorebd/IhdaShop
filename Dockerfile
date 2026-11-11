@@ -20,6 +20,7 @@ RUN npm run build
 # ---- run ----
 FROM node:22-alpine AS runner
 WORKDIR /app
+RUN apk add --no-cache postgresql-client
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
