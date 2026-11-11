@@ -8,7 +8,7 @@ export async function GET(req) {
   if (denied) return denied;
   const config = backupServerConfig();
   if (!config.database || !config.googleOAuth || !config.encryption) {
-    return Response.redirect(new URL("/admin/backups?error=server_config", req.url), 302);
+    return new Response(null, { status: 302, headers: { Location: "/admin/backups?error=server_config" } });
   }
   const state = crypto.randomBytes(32).toString("hex");
   const stateHash = crypto.createHash("sha256").update(state).digest("hex");

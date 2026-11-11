@@ -91,6 +91,74 @@ test("invalid configured origins fail closed instead of trusting the request URL
   }
 });
 
+test("Google callback redirects stay on each public client domain behind a proxy", async () => {
+  for (const domain of ["https://shop.test", "https://second-client.test"]) {
+    for (const scenario of [
+      { query: "code=test-code&state=test-state", result: "connected=1", saved: 1 },
+      { query: "error=access_denied", result: "error=google_denied", saved: 0 },
+      { query: "code=test-code", result: "error=invalid_callback", saved: 0 },
+      { query: "code=test-code&state=test-state", validState: false, result: "error=invalid_state", saved: 0 },
+      { query: "code=test-code&state=test-state", tokenFails: true, result: "error=connection_failed", saved: 0 },
+    ]) {
+      let saved = 0;
+      const redirectUri = `${domain}/api/admin/google-drive/callback`;
+      const drive = await loadModule("lib/google-drive.js", {}, { process: { env: { GOOGLE_OAUTH_REDIRECT_URI: redirectUri } } });
+      const route = await loadModule("app/api/admin/google-drive/callback/route.js", {
+        "@/lib/admin-request": { authorizeAdminRequest: async () => null },
+        "@/lib/backup-db": {
+          consumeOAuthState: async () => scenario.validState !== false,
+          saveGoogleConnection: async () => { saved++; },
+        },
+        "@/lib/google-drive": {
+          ...drive,
+          exchangeGoogleCode: async (args) => {
+            assert.equal(args.redirectUri, redirectUri);
+            if (scenario.tokenFails) throw new Error("test token exchange failure");
+            return { refresh_token: "test-refresh", access_token: "test-access" };
+          },
+          googleAccountEmail: async () => "test@example.com",
+        },
+      });
+      const response = await route.GET(adminRequest({ url: `https://0.0.0.0:3000/api/admin/google-drive/callback?${scenario.query}` }));
+      assert.equal(response.status, 302);
+      const location = response.headers.get("location");
+      assert.equal(location, `/admin/backups?${scenario.result}`);
+      assert.equal(new URL(location, redirectUri).href, `${domain}/admin/backups?${scenario.result}`);
+      assert.equal(saved, scenario.saved);
+    }
+  }
+});
+
+test("Google connect uses the public OAuth callback and same-site configuration errors", async () => {
+  const env = {
+    GOOGLE_CLIENT_ID: "test-client", GOOGLE_CLIENT_SECRET: "test-secret",
+    GOOGLE_OAUTH_REDIRECT_URI: "https://shop.test/api/admin/google-drive/callback",
+  };
+  const drive = await loadModule("lib/google-drive.js", {}, { process: { env } });
+  for (const configured of [false, true]) {
+    let stateSaved = false;
+    const route = await loadModule("app/api/admin/google-drive/connect/route.js", {
+      "@/lib/admin-request": { authorizeAdminRequest: async () => null },
+      "@/lib/backup-db": {
+        backupServerConfig: () => ({ database: true, encryption: true, googleOAuth: configured }),
+        saveOAuthState: async () => { stateSaved = true; },
+      },
+      "@/lib/google-drive": drive,
+    });
+    const response = await route.GET(adminRequest({ url: "http://0.0.0.0:3000/api/admin/google-drive/connect" }));
+    assert.equal(response.status, 302);
+    const location = response.headers.get("location");
+    if (configured) {
+      const target = new URL(location);
+      assert.equal(target.origin, "https://accounts.google.com");
+      assert.equal(target.searchParams.get("redirect_uri"), env.GOOGLE_OAUTH_REDIRECT_URI);
+    } else {
+      assert.equal(location, "/admin/backups?error=server_config");
+    }
+    assert.equal(stateSaved, configured);
+  }
+});
+
 function serviceMocks({ verificationFails = false } = {}) {
   const events = [];
   return {
