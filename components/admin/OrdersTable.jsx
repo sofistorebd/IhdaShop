@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const STATUS_LABEL = {
   inreview: { text: "In Review", cls: "bg-purple-100 text-purple-700" },
@@ -23,7 +24,9 @@ function formatOrderDateTime(value) {
 }
 
 export default function OrdersTable({ initialOrders, steadfastReady, delivery }) {
+  const router = useRouter();
   const [orders, setOrders] = useState(initialOrders);
+  const [statusBusy, setStatusBusy] = useState(null);
   const [busy, setBusy] = useState(null);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [msg, setMsg] = useState("");
@@ -123,21 +126,27 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
   }
 
   async function changeStatus(id, status) {
+    if (statusBusy !== null) return;
     const prevStatus = orders.find((o) => o.id === id)?.status;
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
+    setStatusBusy(id);
+    setMsg("");
     try {
       const res = await fetch("/api/admin/status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status }),
       });
-      if (!res.ok) throw new Error();
+      const result = await res.json();
+      if (!res.ok || !result.ok) throw new Error();
+      setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
+      if (prevStatus === "inreview" && status === "pending") {
+        setMsg(`✅ অর্ডার #${id} যাচাই হয়েছে এবং Pending তালিকায় যোগ হয়েছে।`);
+      }
+      router.refresh();
     } catch {
-      // ব্যর্থ হলে আগের status ফিরিয়ে আনি — নাহলে UI ভুল দেখায়
-      setOrders((prev) =>
-        prev.map((o) => (o.id === id ? { ...o, status: prevStatus } : o))
-      );
       setMsg("❌ স্ট্যাটাস সেভ হয়নি — আবার চেষ্টা করো।");
+    } finally {
+      setStatusBusy(null);
     }
   }
 
@@ -154,7 +163,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
   return (
     <div>
       {msg && (
-        <div className="mb-3 rounded-xl bg-ink px-4 py-2 text-sm text-white">{msg}</div>
+        <div role="status" className="mb-3 rounded-xl bg-ink px-4 py-2 text-sm text-white">{msg}</div>
       )}
 
       {/* bulk অ্যাকশন বার */}
@@ -162,18 +171,46 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
         <section className="mb-5 rounded-2xl border border-purple-200 bg-purple-50 p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="text-base font-bold text-purple-900">In Review</h2>
-            <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">{reviewOrders.length} pending verification</span>
+            <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">{reviewOrders.length.toLocaleString("bn-BD")}টি যাচাই বাকি</span>
           </div>
-          <div className="space-y-2">
+          <p className="mb-4 text-sm text-purple-800">গ্রাহককে কল করে পণ্য, পরিমাণ ও ঠিকানা মিলিয়ে নিন। যাচাই করে Pending করার পর অর্ডার ও বিক্রির হিসাবে যুক্ত হবে।</p>
+          <div className="space-y-4">
             {reviewOrders.map((o) => (
-              <div key={o.id} className="flex flex-wrap items-center gap-3 rounded-xl bg-white px-3 py-3 text-sm shadow-sm">
-                <span className="font-semibold text-purple-900">#{o.id}</span>
-                <span className="font-medium text-ink">{o.name}</span>
-                <span className="text-gray-600">{o.phone}</span>
-                <span className="min-w-[180px] flex-1 text-gray-600">{o.product}</span>
-                <span className="text-xs text-gray-500">{formatOrderDateTime(o.created_at)}</span>
-                <button onClick={() => changeStatus(o.id, "pending")} className="rounded-full bg-purple-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-purple-800">Confirm -&gt; Pending</button>
-              </div>
+              <article key={o.id} aria-label={`যাচাইয়ের জন্য অর্ডার #${o.id}`} className="rounded-xl bg-white p-4 text-sm shadow-sm">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-3">
+                  <h3 className="font-bold text-purple-900">অর্ডার #{o.id}</h3>
+                  <span className="text-xs text-gray-500">{formatOrderDateTime(o.created_at)}</span>
+                </div>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="min-w-0">
+                    <h4 className="mb-2 font-semibold text-ink">গ্রাহকের তথ্য</h4>
+                    <dl className="space-y-2 break-words text-gray-700">
+                      <div><dt className="text-xs text-gray-500">নাম</dt><dd className="font-medium">{o.name || "—"}</dd></div>
+                      <div><dt className="text-xs text-gray-500">ফোন</dt><dd>{o.phone ? <a href={`tel:${String(o.phone).replace(/[^+0-9]/g, "")}`} className="font-semibold text-purple-700 underline">{o.phone} — কল করুন</a> : "—"}</dd></div>
+                      <div><dt className="text-xs text-gray-500">সম্পূর্ণ ঠিকানা</dt><dd className="whitespace-pre-wrap">{o.address || "—"}</dd></div>
+                      <div><dt className="text-xs text-gray-500">ডেলিভারি এলাকা</dt><dd>{o.area || "—"}</dd></div>
+                    </dl>
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="mb-2 font-semibold text-ink">পণ্যের তথ্য</h4>
+                    <dl className="space-y-2 break-words text-gray-700">
+                      <div><dt className="text-xs text-gray-500">পণ্য / অপশন</dt><dd className="font-medium">{o.product || "—"}</dd></div>
+                      <div className="flex flex-wrap gap-6">
+                        <div><dt className="text-xs text-gray-500">সাইজ</dt><dd>{o.size || "—"}</dd></div>
+                        {o.color && <div><dt className="text-xs text-gray-500">রং</dt><dd>{o.color}</dd></div>}
+                        <div><dt className="text-xs text-gray-500">পরিমাণ</dt><dd>{Number(o.qty ?? 1).toLocaleString("bn-BD")}টি</dd></div>
+                      </div>
+                      <div className="flex justify-between gap-3"><dt>পণ্যের মোট দাম</dt><dd>{bdt(Number(o.total ?? 0) - Number(o.delivery_charge ?? 0))}</dd></div>
+                      <div className="flex justify-between gap-3"><dt>ডেলিভারি চার্জ</dt><dd>{bdt(o.delivery_charge ?? 0)}</dd></div>
+                      <div className="flex justify-between gap-3 border-t border-gray-100 pt-2 font-bold text-ink"><dt>সর্বমোট</dt><dd>{bdt(o.total ?? 0)}</dd></div>
+                    </dl>
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-3">
+                  <button type="button" disabled={statusBusy !== null} onClick={() => setEditing(o)} className="text-sm font-semibold text-purple-700 hover:underline disabled:opacity-50">তথ্য সংশোধন করুন</button>
+                  <button type="button" disabled={statusBusy !== null} onClick={() => changeStatus(o.id, "pending")} className="rounded-full bg-purple-700 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-800 disabled:cursor-wait disabled:opacity-50">{statusBusy === o.id ? "সেভ হচ্ছে..." : "যাচাই সম্পন্ন → Pending করুন"}</button>
+                </div>
+              </article>
             ))}
           </div>
         </section>
@@ -268,6 +305,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
                   <td className="px-4 py-3">
                     <select
                       value={o.status}
+                      disabled={statusBusy !== null}
                       onChange={(e) => changeStatus(o.id, e.target.value)}
                       className={`rounded-full px-2 py-1 text-xs font-semibold ${st.cls}`}
                     >
