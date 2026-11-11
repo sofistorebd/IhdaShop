@@ -35,22 +35,60 @@ async function loadModule(relativePath, mocks = {}, globals = {}) {
   return module.exports;
 }
 
-function adminRequest({ cookie = "valid-token", origin = "https://shop.test", action = "google-drive-backup" } = {}) {
+function adminRequest({ cookie = "valid-token", origin = "https://shop.test", action = "google-drive-backup", url = "https://shop.test/api/admin/google-drive/run", extraHeaders = {} } = {}) {
   return {
-    url: "https://shop.test/api/admin/google-drive/run",
+    url,
     cookies: { get: () => cookie ? { value: cookie } : undefined },
-    headers: new Headers({ origin, "x-admin-action": action }),
+    headers: new Headers({ ...(origin === null ? {} : { origin }), "x-admin-action": action, ...extraHeaders }),
   };
 }
 
 test("backup admin routes require a valid session and same-origin action", async () => {
   const auth = await loadModule("lib/admin-request.js", {
     "./auth": { ADMIN_COOKIE: "store_admin", sessionToken: async () => "valid-token" },
-  });
+  }, { process: { env: {} } });
   assert.equal(await auth.authorizeAdminRequest(adminRequest(), { mutation: true }), null);
   assert.equal((await auth.authorizeAdminRequest(adminRequest({ cookie: "wrong" }))).status, 401);
   assert.equal((await auth.authorizeAdminRequest(adminRequest({ origin: "https://attacker.test" }), { mutation: true })).status, 403);
   assert.equal((await auth.authorizeAdminRequest(adminRequest({ action: "" }), { mutation: true })).status, 403);
+});
+
+test("backup and disconnect accept the configured public origin behind a proxy", async () => {
+  for (const env of [
+    { GOOGLE_OAUTH_REDIRECT_URI: "https://shop.test/api/admin/google-drive/callback", NEXT_PUBLIC_SITE_URL: "https://old-build.test" },
+    { NEXT_PUBLIC_SITE_URL: "https://shop.test/" },
+  ]) {
+    const auth = await loadModule("lib/admin-request.js", {
+      "./auth": { ADMIN_COOKIE: "store_admin", sessionToken: async () => "valid-token" },
+    }, { process: { env } });
+    for (const action of ["run", "disconnect"]) {
+      const req = adminRequest({ url: `http://0.0.0.0:3000/api/admin/google-drive/${action}` });
+      assert.equal(await auth.authorizeAdminRequest(req, { mutation: true }), null);
+    }
+  }
+});
+
+test("configured backup origin rejects forged headers, other clients and missing CSRF checks", async () => {
+  const auth = await loadModule("lib/admin-request.js", {
+    "./auth": { ADMIN_COOKIE: "store_admin", sessionToken: async () => "valid-token" },
+  }, { process: { env: { GOOGLE_OAUTH_REDIRECT_URI: "https://shop.test/api/admin/google-drive/callback" } } });
+  for (const origin of [null, "null", "https://other-client.test", "http://shop.test", "https://shop.test:444", "https://shop.test.attacker.test", "http://0.0.0.0:3000"]) {
+    const req = adminRequest({ origin, url: "http://0.0.0.0:3000/api/admin/google-drive/run", extraHeaders: {
+      host: "other-client.test", "x-forwarded-host": "other-client.test", "x-forwarded-proto": "https",
+    } });
+    assert.equal((await auth.authorizeAdminRequest(req, { mutation: true })).status, 403);
+  }
+  assert.equal((await auth.authorizeAdminRequest(adminRequest({ action: "" }), { mutation: true })).status, 403);
+  assert.equal((await auth.authorizeAdminRequest(adminRequest({ cookie: "wrong" }), { mutation: true })).status, 401);
+});
+
+test("invalid configured origins fail closed instead of trusting the request URL", async () => {
+  for (const configured of ["not-a-url", "ftp://shop.test", "https://user:password@shop.test"]) {
+    const auth = await loadModule("lib/admin-request.js", {
+      "./auth": { ADMIN_COOKIE: "store_admin", sessionToken: async () => "valid-token" },
+    }, { process: { env: { GOOGLE_OAUTH_REDIRECT_URI: configured } } });
+    assert.equal((await auth.authorizeAdminRequest(adminRequest(), { mutation: true })).status, 403);
+  }
 });
 
 function serviceMocks({ verificationFails = false } = {}) {
@@ -99,6 +137,20 @@ test("failed upload verification never invokes retention", async () => {
   const setup = serviceMocks({ verificationFails: true });
   const service = await loadModule("lib/backup-service.js", setup.mocks);
   await assert.rejects(service.runGoogleDriveBackup({ force: true }), /verification failed/);
+  assert.equal(setup.events.includes("retention"), false);
+  assert.equal(setup.events.includes("success"), false);
+  assert.equal(setup.events.includes("failure"), true);
+  assert.equal(setup.events.at(-1), "cleanup");
+});
+
+test("Drive quota errors preserve old backups and record failure", async () => {
+  const setup = serviceMocks();
+  setup.mocks["./google-drive"].uploadBackupFile = async () => {
+    setup.events.push("upload");
+    throw new Error("The user's Drive storage quota has been exceeded.");
+  };
+  const service = await loadModule("lib/backup-service.js", setup.mocks);
+  await assert.rejects(service.runGoogleDriveBackup({ force: true }), /storage quota/);
   assert.equal(setup.events.includes("retention"), false);
   assert.equal(setup.events.includes("success"), false);
   assert.equal(setup.events.includes("failure"), true);
