@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { headerColor } from "@/lib/header-colors";
 
 // মডিউল-লেভেল (কম্পোনেন্টের বাইরে) — নাহলে প্রতি রেন্ডারে re-mount হয়ে স্ক্রল/ফোকাস হারায়
 function Section({ title, children }) {
@@ -35,6 +36,8 @@ export default function SettingsForm({ initial }) {
     colorPrimary: initial.colorPrimary || "#5a1436",
     colorSecondary: initial.colorSecondary || "#7a2349",
     colorGlobal: initial.colorGlobal || "#2c1a22",
+    headerBackgroundColor: initial.headerBackgroundColor || "",
+    headerTextColor: initial.headerTextColor || "",
     logoHeight: String(initial.logoHeight ?? 40),
     // সিক্রেট — খালি রাখলে আগেরটা থাকবে
     telegramBotToken: "",
@@ -221,6 +224,58 @@ export default function SettingsForm({ initial }) {
             </button>
             <span className="text-sm" style={{ color: "#fff" }}>প্রিভিউ</span>
           </div>
+        </div>
+      </Section>
+
+      <Section title="হেডার ও মেনুর রঙ">
+        <p className="text-sm text-gray-500">
+          রঙ নির্বাচন না করলে বর্তমান হেডার অপরিবর্তিত থাকবে। ডিফল্টে ফিরতে রঙটি খালি করে সেভ করুন।
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[
+            ["headerBackgroundColor", "হেডারের ব্যাকগ্রাউন্ড", "#ffffff"],
+            ["headerTextColor", "হেডারের নাম ও মেনু লিঙ্কের রঙ", "#4b5563"],
+          ].map(([key, label, fallback]) => (
+            <div key={key}>
+              <label htmlFor={key} className={lbl}>{label}</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  aria-label={`${label} নির্বাচন করুন`}
+                  value={headerColor(f[key]) || fallback}
+                  onChange={(e) => set(key, e.target.value)}
+                  className="h-10 w-12 shrink-0 cursor-pointer rounded-lg border border-gray-200"
+                />
+                <input
+                  id={key}
+                  className={inp}
+                  value={f[key]}
+                  onChange={(e) => set(key, e.target.value)}
+                  placeholder="খালি = বর্তমান ডিফল্ট"
+                  pattern="#[0-9a-fA-F]{6}"
+                  title="#RRGGBB ফরম্যাটে রঙ দিন, যেমন #ffffff"
+                  maxLength={7}
+                />
+              </div>
+              <button type="button" onClick={() => set(key, "")} className="mt-2 text-xs text-brand underline">
+                ডিফল্টে ফিরুন
+              </button>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500">প্রিভিউ — লোগোর ছবির রঙ এবং অর্ডার বাটনের রঙ আগের মতো থাকবে।</p>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-100 p-4"
+          style={{ backgroundColor: headerColor(f.headerBackgroundColor) || "#ffffff" }}>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt={f.brandName} className="h-10 max-w-[140px] object-contain" />
+          ) : (
+            <span className="font-bold" style={{ color: headerColor(f.headerTextColor) || f.colorGlobal }}>{f.brandName || "সাইটের নাম"}</span>
+          )}
+          <div className="flex gap-4 text-sm text-gray-600" style={{ color: headerColor(f.headerTextColor) || undefined }}>
+            <span>প্রোডাক্ট</span><span>রিভিউ</span>
+          </div>
+          <span className="rounded-full px-4 py-2 text-sm font-semibold text-white" style={{ backgroundColor: f.colorPrimary }}>অর্ডার করুন</span>
         </div>
       </Section>
 
