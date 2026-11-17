@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 const STATUS_LABEL = {
@@ -23,10 +23,10 @@ function formatOrderDateTime(value) {
   }).format(date);
 }
 
-export default function OrdersTable({ initialOrders, steadfastReady, delivery }) {
+export default function OrdersTable({ initialOrders, pagination, steadfastReady, delivery }) {
   const router = useRouter();
   const [orders, setOrders] = useState(initialOrders);
-  const [activeTab, setActiveTab] = useState("inreview");
+  const [activeTab, setActiveTab] = useState(pagination?.status || "inreview");
   const [statusBusy, setStatusBusy] = useState(null);
   const [deleteBusy, setDeleteBusy] = useState(null);
   const [busy, setBusy] = useState(null);
@@ -34,13 +34,33 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
   const [msg, setMsg] = useState("");
   const [selected, setSelected] = useState(() => new Set());
   const [editing, setEditing] = useState(null); // যে অর্ডারটি এডিট হচ্ছে
+  const [navigating, startNavigation] = useTransition();
   const reviewOrders = orders.filter((o) => o.status === "inreview");
   const activeOrders = orders.filter((o) => o.status === activeTab && o.status !== "inreview");
-  const actionsBusy = statusBusy !== null || deleteBusy !== null || busy !== null || bulkBusy;
+  const actionsBusy = navigating || statusBusy !== null || deleteBusy !== null || busy !== null || bulkBusy;
   const tabStatuses = Object.keys(STATUS_LABEL);
+
+  function navigateOrders(status, page = 1) {
+    setSelected(new Set());
+    startNavigation(() => router.push(`/admin?status=${encodeURIComponent(status)}&page=${page}`, { scroll: false }));
+  }
+
+  function refreshOrders() {
+    startNavigation(() => router.refresh());
+  }
+
+  function countForStatus(status) {
+    const current = orders.filter((o) => o.status === status).length;
+    if (!pagination) return current;
+    return pagination.counts[status] + current - initialOrders.filter((o) => o.status === status).length;
+  }
 
   function selectTab(status) {
     if (actionsBusy) return;
+    if (pagination) {
+      navigateOrders(status);
+      return;
+    }
     setActiveTab(status);
     setSelected(new Set());
     setMsg("");
@@ -64,6 +84,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
     setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
     setEditing(null);
     setMsg(`✅ অর্ডার #${updated.id} আপডেট হয়েছে`);
+    refreshOrders();
   }
 
   const bdt = (n) => "৳" + Number(n).toLocaleString("bn-BD");
@@ -96,6 +117,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
           : o;
       })
     );
+    refreshOrders();
   }
 
   async function sendToSteadfast(id) {
@@ -169,8 +191,12 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
       if (prevStatus === "inreview" && status === "pending") {
         setActiveTab("pending");
         setMsg(`✅ অর্ডার #${id} যাচাই হয়েছে এবং Pending তালিকায় যোগ হয়েছে।`);
+        if (pagination) {
+          navigateOrders("pending");
+          return;
+        }
       }
-      router.refresh();
+      refreshOrders();
     } catch {
       setMsg("❌ স্ট্যাটাস সেভ হয়নি — আবার চেষ্টা করো।");
     } finally {
@@ -193,7 +219,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
       setOrders((prev) => prev.filter((o) => o.id !== order.id));
       setSelected(new Set());
       setMsg(`✅ In Review অর্ডার #${order.id} মুছে ফেলা হয়েছে।`);
-      router.refresh();
+      refreshOrders();
     } catch (err) {
       setMsg("❌ " + (err.message || "অর্ডার ডিলিট করা যায়নি।"));
     } finally {
@@ -221,12 +247,23 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
             className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:opacity-50 ${activeTab === status ? "border-emerald-500 bg-emerald-50 text-emerald-800" : "border-gray-200 bg-white text-gray-600 hover:border-emerald-300 hover:text-emerald-800"}`}
           >
             {label.text}
-            <span className="rounded-full bg-black/5 px-2 py-0.5 text-xs">{orders.filter((o) => o.status === status).length.toLocaleString("bn-BD")}</span>
+            <span className="rounded-full bg-black/5 px-2 py-0.5 text-xs">{countForStatus(status).toLocaleString("bn-BD")}</span>
           </button>
         ))}
       </div>
       {msg && (
         <div role="status" className="mb-3 rounded-xl bg-ink px-4 py-2 text-sm text-white">{msg}</div>
+      )}
+
+      {pagination && (
+        <nav aria-label="অর্ডারের পৃষ্ঠা" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white p-3 text-sm">
+          <span>{STATUS_LABEL[activeTab].text}: মোট {countForStatus(activeTab).toLocaleString("bn-BD")}টি · পৃষ্ঠা {pagination.page.toLocaleString("bn-BD")} / {pagination.totalPages.toLocaleString("bn-BD")} · প্রতি পৃষ্ঠায় {pagination.pageSize.toLocaleString("bn-BD")}টি</span>
+          <div className="flex gap-2">
+            <button type="button" disabled={actionsBusy || pagination.page <= 1} onClick={() => navigateOrders(activeTab, pagination.page - 1)} className="rounded-lg border px-3 py-2 disabled:opacity-40">আগের পৃষ্ঠা</button>
+            <button type="button" disabled={actionsBusy || pagination.page >= pagination.totalPages} onClick={() => navigateOrders(activeTab, pagination.page + 1)} className="rounded-lg border px-3 py-2 disabled:opacity-40">পরের পৃষ্ঠা</button>
+          </div>
+          {navigating && <span role="status">লোড হচ্ছে...</span>}
+        </nav>
       )}
 
       <div role="tabpanel" id={`order-panel-${activeTab}`} aria-labelledby={`order-tab-${activeTab}`} tabIndex={0}>
@@ -240,7 +277,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
         <section className="mb-5 rounded-2xl border border-purple-200 bg-purple-50 p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="text-base font-bold text-purple-900">In Review</h2>
-            <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">{reviewOrders.length.toLocaleString("bn-BD")}টি যাচাই বাকি</span>
+            <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">{countForStatus("inreview").toLocaleString("bn-BD")}টি যাচাই বাকি</span>
           </div>
           <p className="mb-4 text-sm text-purple-800">গ্রাহককে কল করে পণ্য, পরিমাণ ও ঠিকানা মিলিয়ে নিন। যাচাই করে Pending করার পর অর্ডার ও বিক্রির হিসাবে যুক্ত হবে।</p>
           <p className="mb-4 text-sm text-purple-800">নিশ্চিত না হলে অর্ডারটি এখানেই রেখে দিন। অপ্রয়োজনীয় অর্ডার Delete করতে পারেন।</p>
@@ -295,7 +332,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
             {selected.size.toLocaleString("bn-BD")}টি নির্বাচিত
           </span>
           <button
-            disabled={!steadfastReady || bulkBusy}
+            disabled={!steadfastReady || actionsBusy}
             onClick={bulkSend}
             className="rounded-full bg-brand px-4 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-40"
             title={steadfastReady ? "" : "Steadfast API key সেট করা নেই"}
@@ -326,6 +363,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
                 <input
                   type="checkbox"
                   checked={allChecked}
+                  disabled={actionsBusy}
                   onChange={toggleAll}
                   className="h-4 w-4 accent-brand"
                   aria-label="সব নির্বাচন"
@@ -350,6 +388,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
                     <input
                       type="checkbox"
                       checked={checked}
+                      disabled={actionsBusy}
                       onChange={() => toggle(o.id)}
                       className="h-4 w-4 accent-brand"
                       aria-label={`অর্ডার ${o.id}`}
@@ -363,6 +402,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
                     <p className="mt-1 max-w-[200px] text-xs text-gray-400">{o.address}</p>
                     <button
                       onClick={() => setEditing(o)}
+                      disabled={actionsBusy}
                       className="mt-1 text-xs font-semibold text-brand hover:underline"
                     >
                       ✏️ এডিট
@@ -379,7 +419,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
                   <td className="px-4 py-3">
                     <select
                       value={o.status}
-                      disabled={statusBusy !== null}
+                      disabled={actionsBusy}
                       onChange={(e) => changeStatus(o.id, e.target.value)}
                       className={`rounded-full px-2 py-1 text-xs font-semibold ${st.cls}`}
                     >
@@ -401,7 +441,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
                       </div>
                     ) : (
                       <button
-                        disabled={!steadfastReady || busy === o.id}
+                        disabled={!steadfastReady || actionsBusy}
                         onClick={() => sendToSteadfast(o.id)}
                         title={steadfastReady ? "" : "Steadfast API key সেট করা নেই"}
                         className="rounded-full bg-brand px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-40"

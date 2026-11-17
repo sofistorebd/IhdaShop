@@ -1,4 +1,5 @@
-import { listOrders, hasDb } from "@/lib/db";
+import { createHash } from "node:crypto";
+import { getOrderDashboard, hasDb } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import { steadfastReady } from "@/lib/steadfast";
 import OrdersTable from "@/components/admin/OrdersTable";
@@ -8,29 +9,24 @@ import { AdminHeader, StatCard } from "@/components/admin/AdminUI";
 export const dynamic = "force-dynamic";
 export const metadata = { robots: { index: false, follow: false } };
 
-export default async function AdminPage() {
-  let orders = [];
+export default async function AdminPage({ searchParams }) {
+  const filters = (await searchParams) || {};
+  let dashboard = null;
   let dbError = false;
   if (hasDb()) {
     try {
-      orders = await listOrders();
+      dashboard = await getOrderDashboard({ status: filters.status, page: filters.page });
     } catch {
       dbError = true;
     }
   }
 
-  const visibleOrders = orders.filter((o) => o.status !== "inreview");
-
-  const stats = {
-    total: visibleOrders.length,
-    pending: visibleOrders.filter((o) => o.status === "pending").length,
-    sent: visibleOrders.filter((o) => o.status === "sent_to_courier").length,
-    revenue: visibleOrders.reduce((s, o) => s + (Number(o.total) || 0), 0),
-  };
-  const bn = (n) => Number(n).toLocaleString("bn-BD");
-  const bdt = (n) => "৳" + bn(n);
-  const sfReady = await steadfastReady();
-  const site = await getSettings();
+  const stats = dashboard?.stats || {};
+  const bn = (n) => n == null ? "—" : Number(n).toLocaleString("bn-BD");
+  const bdt = (n) => n == null ? "—" : "৳" + bn(n);
+  const [sfReady, site] = await Promise.all([steadfastReady(), getSettings()]);
+  // Refreshes must replace local row/selection state, not retain an old page.
+  const snapshotKey = dashboard ? createHash("sha256").update(JSON.stringify(dashboard)).digest("hex") : "empty";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -55,7 +51,7 @@ export default async function AdminPage() {
         </div>
 
         <div className="mt-6">
-          <OrdersTable initialOrders={orders} steadfastReady={sfReady} delivery={site.delivery} />
+          {dashboard && <OrdersTable key={snapshotKey} initialOrders={dashboard.orders} pagination={dashboard.pagination} steadfastReady={sfReady} delivery={site.delivery} />}
         </div>
       </main>
     </div>

@@ -110,21 +110,23 @@ function nodes(tree, predicate) {
   return [...(predicate(tree) ? [tree] : []), ...nodes(tree.props?.children, predicate)];
 }
 
-async function ui({ confirm = true, response = { ok: true }, failure = false } = {}) {
+async function ui({ confirm = true, response = { ok: true }, failure = false, pagination } = {}) {
   const state = [];
   const requests = [];
   const confirmations = [];
+  const navigations = [];
   let cursor = 0;
   let refreshes = 0;
   const component = await load("components/admin/OrdersTable.jsx", {
     react: {
+      useTransition: () => [false, (fn) => fn()],
       useState(initial) {
         const index = cursor++;
         if (!(index in state)) state[index] = typeof initial === "function" ? initial() : initial;
         return [state[index], (next) => { state[index] = typeof next === "function" ? next(state[index]) : next; }];
       },
     },
-    "next/navigation": { useRouter: () => ({ refresh: () => refreshes++ }) },
+    "next/navigation": { useRouter: () => ({ refresh: () => refreshes++, push: (url) => navigations.push(url) }) },
   }, {
     window: { confirm: (text) => { confirmations.push(text); return confirm; } },
     fetch: async (url, options) => {
@@ -140,10 +142,10 @@ async function ui({ confirm = true, response = { ok: true }, failure = false } =
   ];
   const render = () => {
     cursor = 0;
-    return component.default({ initialOrders, steadfastReady: false, delivery: {} });
+    return component.default({ initialOrders, pagination, steadfastReady: false, delivery: {} });
   };
   const deleteButton = (tree) => nodes(tree, (n) => n.type === "button" && n.props["aria-label"] === "অর্ডার #7 Delete করুন")[0];
-  return { render, deleteButton, requests, confirmations, state, refreshes: () => refreshes };
+  return { render, deleteButton, requests, confirmations, state, navigations, refreshes: () => refreshes };
 }
 
 test("UI cancellation keeps order in review without sending a delete request", async () => {
@@ -188,4 +190,41 @@ test("UI verification still moves order to Pending with no Delete option there",
   assert.equal(view.state[0].find((o) => o.id === 7).status, "pending");
   assert.equal(view.state[1], "pending");
   assert.equal(nodes(view.render(), (n) => n.type === "button" && String(n.props["aria-label"]).includes("Delete")).length, 0);
+});
+
+const pagination = {
+  status: "inreview", page: 2, pageSize: 50, total: 251, totalPages: 6,
+  counts: { inreview: 251, pending: 300, confirmed: 0, sent_to_courier: 0, delivered: 12, cancelled: 0 },
+};
+
+test("paginated tabs display database-wide counts instead of loaded row counts", async () => {
+  const view = await ui({ pagination });
+  const pending = nodes(view.render(), (n) => n.props?.id === "order-tab-pending")[0];
+  assert.equal(pending.props.children[1].props.children, (300).toLocaleString("bn-BD"));
+  pending.props.onClick();
+  assert.equal(view.navigations[0], "/admin?status=pending&page=1");
+});
+
+test("pagination preserves the status and clears page-scoped selection", async () => {
+  const view = await ui({ pagination });
+  const next = nodes(view.render(), (n) => n.type === "button" && n.props.children === "পরের পৃষ্ঠা")[0];
+  view.state[7].add(7);
+  next.props.onClick();
+  assert.equal(view.navigations[0], "/admin?status=inreview&page=3");
+  assert.equal(view.state[7].size, 0);
+});
+
+test("pagination disables previous/next buttons at the ends", async () => {
+  const view = await ui({ pagination: { ...pagination, page: 1, totalPages: 1 } });
+  for (const label of ["আগের পৃষ্ঠা", "পরের পৃষ্ঠা"]) {
+    assert.equal(nodes(view.render(), (n) => n.type === "button" && n.props.children === label)[0].props.disabled, true);
+  }
+});
+
+test("review verification navigates to Pending page one, not an incomplete local list", async () => {
+  const view = await ui({ pagination });
+  const verify = nodes(view.render(), (n) => n.type === "button" && n.props.children === "যাচাই সম্পন্ন → Pending করুন")[0];
+  await verify.props.onClick();
+  assert.equal(view.navigations[0], "/admin?status=pending&page=1");
+  assert.equal(view.requests[0].options.method, "POST");
 });
