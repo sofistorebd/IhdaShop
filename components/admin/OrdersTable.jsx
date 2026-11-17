@@ -28,6 +28,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
   const [orders, setOrders] = useState(initialOrders);
   const [activeTab, setActiveTab] = useState("inreview");
   const [statusBusy, setStatusBusy] = useState(null);
+  const [deleteBusy, setDeleteBusy] = useState(null);
   const [busy, setBusy] = useState(null);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [msg, setMsg] = useState("");
@@ -35,7 +36,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
   const [editing, setEditing] = useState(null); // যে অর্ডারটি এডিট হচ্ছে
   const reviewOrders = orders.filter((o) => o.status === "inreview");
   const activeOrders = orders.filter((o) => o.status === activeTab && o.status !== "inreview");
-  const actionsBusy = statusBusy !== null || busy !== null || bulkBusy;
+  const actionsBusy = statusBusy !== null || deleteBusy !== null || busy !== null || bulkBusy;
   const tabStatuses = Object.keys(STATUS_LABEL);
 
   function selectTab(status) {
@@ -151,7 +152,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
   }
 
   async function changeStatus(id, status) {
-    if (statusBusy !== null) return;
+    if (actionsBusy) return;
     const prevStatus = orders.find((o) => o.id === id)?.status;
     setStatusBusy(id);
     setMsg("");
@@ -174,6 +175,29 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
       setMsg("❌ স্ট্যাটাস সেভ হয়নি — আবার চেষ্টা করো।");
     } finally {
       setStatusBusy(null);
+    }
+  }
+
+  async function deleteReviewOrder(order) {
+    if (actionsBusy || order.status !== "inreview") return;
+    if (!window.confirm(`অর্ডার #${order.id} — ${order.name || "নাম নেই"}\nএই In Review অর্ডারটি স্থায়ীভাবে মুছে ফেলবেন?\nপ্যানেল থেকে এটি ফেরত আনা যাবে না। রেখে দিতে চাইলে Cancel চাপুন।`)) return;
+    setDeleteBusy(order.id);
+    setMsg("");
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}`, {
+        method: "DELETE",
+        headers: { "x-admin-action": "delete-inreview-order" },
+      });
+      const result = await res.json();
+      if (!res.ok || !result.ok) throw new Error(result.error || "অর্ডার ডিলিট করা যায়নি।");
+      setOrders((prev) => prev.filter((o) => o.id !== order.id));
+      setSelected(new Set());
+      setMsg(`✅ In Review অর্ডার #${order.id} মুছে ফেলা হয়েছে।`);
+      router.refresh();
+    } catch (err) {
+      setMsg("❌ " + (err.message || "অর্ডার ডিলিট করা যায়নি।"));
+    } finally {
+      setDeleteBusy(null);
     }
   }
 
@@ -219,6 +243,7 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
             <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">{reviewOrders.length.toLocaleString("bn-BD")}টি যাচাই বাকি</span>
           </div>
           <p className="mb-4 text-sm text-purple-800">গ্রাহককে কল করে পণ্য, পরিমাণ ও ঠিকানা মিলিয়ে নিন। যাচাই করে Pending করার পর অর্ডার ও বিক্রির হিসাবে যুক্ত হবে।</p>
+          <p className="mb-4 text-sm text-purple-800">নিশ্চিত না হলে অর্ডারটি এখানেই রেখে দিন। অপ্রয়োজনীয় অর্ডার Delete করতে পারেন।</p>
           <div className="space-y-4">
             {reviewOrders.map((o) => (
               <article key={o.id} aria-label={`যাচাইয়ের জন্য অর্ডার #${o.id}`} className="rounded-xl bg-white p-4 text-sm shadow-sm">
@@ -252,8 +277,11 @@ export default function OrdersTable({ initialOrders, steadfastReady, delivery })
                   </div>
                 </div>
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-3">
-                  <button type="button" disabled={statusBusy !== null} onClick={() => setEditing(o)} className="text-sm font-semibold text-purple-700 hover:underline disabled:opacity-50">তথ্য সংশোধন করুন</button>
-                  <button type="button" disabled={statusBusy !== null} onClick={() => changeStatus(o.id, "pending")} className="rounded-full bg-purple-700 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-800 disabled:cursor-wait disabled:opacity-50">{statusBusy === o.id ? "সেভ হচ্ছে..." : "যাচাই সম্পন্ন → Pending করুন"}</button>
+                  <button type="button" disabled={actionsBusy} onClick={() => setEditing(o)} className="text-sm font-semibold text-purple-700 hover:underline disabled:opacity-50">তথ্য সংশোধন করুন</button>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" disabled={actionsBusy || Boolean(o.consignment_id || o.tracking_code)} onClick={() => deleteReviewOrder(o)} aria-label={`অর্ডার #${o.id} Delete করুন`} className="rounded-full border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">{deleteBusy === o.id ? "মুছে ফেলা হচ্ছে..." : "Delete করুন"}</button>
+                    <button type="button" disabled={actionsBusy} onClick={() => changeStatus(o.id, "pending")} className="rounded-full bg-purple-700 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-800 disabled:cursor-wait disabled:opacity-50">{statusBusy === o.id ? "সেভ হচ্ছে..." : "যাচাই সম্পন্ন → Pending করুন"}</button>
+                  </div>
                 </div>
               </article>
             ))}
