@@ -1,21 +1,23 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ProductImage from "./ProductImage";
-import { track } from "@/lib/fbpixel";
+import { track, trackCustom } from "@/lib/fbpixel";
+import TurnstileChallenge from "./TurnstileChallenge";
 
 // বাংলাদেশি মোবাইল: 11 ডিজিট, 01 দিয়ে শুরু (01XXXXXXXXX)। +880/880 থাকলেও ধরে।
 function normalizePhone(p) {
-  let d = String(p || "").replace(/\D/g, "");
-  if (d.startsWith("88")) d = d.slice(2);
-  return d;
+  return String(p || "").replace(/[০-৯]/g, (c) => String(c.charCodeAt(0) - 0x09e6))
+    .replace(/[\s()+-]/g, "").replace(/^880/, "0");
 }
 function validPhone(p) {
-  return /^01\d{9}$/.test(normalizePhone(p));
+  return /^01[3-9]\d{8}$/.test(normalizePhone(p));
 }
 
 export default function OrderForm({ product, settings }) {
   const checkoutFired = useRef(false);
+  const submitting = useRef(false);
+  const attempt = useRef(null);
   const site = settings;
   const variants = product.variants;
   // ডিফল্ট: ফুল সেট (মেইন দামের সাথে মিলে), না পেলে প্রথমটা
@@ -33,6 +35,25 @@ export default function OrderForm({ product, settings }) {
   const [address, setAddress] = useState("");
   const [phoneErr, setPhoneErr] = useState("");
   const [status, setStatus] = useState("idle"); // idle | sending | success | error
+  const [error, setError] = useState("");
+  const [duplicate, setDuplicate] = useState(false);
+  const [security, setSecurity] = useState(null);
+  const [securityError, setSecurityError] = useState("");
+  const [securityAttempt, setSecurityAttempt] = useState(0);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [challengeReset, setChallengeReset] = useState(0);
+  const [companyWebsite, setCompanyWebsite] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setSecurity(null);
+    setSecurityError("");
+    fetch("/api/checkout/config", { cache: "no-store", signal: controller.signal })
+      .then(async (res) => { const data = await res.json(); if (!res.ok || !data.ok) throw new Error(); return data; })
+      .then(setSecurity)
+      .catch((err) => { if (err.name !== "AbortError") setSecurityError("অর্ডার সেবা লোড হয়নি। আবার চেষ্টা করুন।"); });
+    return () => controller.abort();
+  }, [securityAttempt]);
 
   const variant = variants[vIdx];
   const deliveryCharge =
@@ -63,8 +84,9 @@ export default function OrderForm({ product, settings }) {
     window.open(`https://wa.me/${site.whatsapp}?text=${msg}`, "_blank");
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e, allowRepeat = false) {
     e.preventDefault();
+    if (submitting.current || !security) return;
     if (!name || !phone || !address) return;
     // ফোন ফরম্যাট ঠিক না থাকলে অর্ডার তৈরি হবে না
     if (!validPhone(phone)) {
@@ -72,48 +94,51 @@ export default function OrderForm({ product, settings }) {
       return;
     }
     setPhoneErr("");
+    if (security.enabled && !turnstileToken) {
+      setError("নিরাপত্তা যাচাই সম্পন্ন করুন।");
+      setStatus("error");
+      return;
+    }
+    submitting.current = true;
     setStatus("sending");
-    // একই event_id browser pixel + server CAPI দুই জায়গায় → Meta dedup করে
-    const eventId =
-      typeof crypto !== "undefined" && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    setError("");
     try {
+      const payload = {
+        product: fullName, variant: variant.name, slug: product.slug,
+        size, qty, area: area === "inside" ? "ঢাকার ভিতরে" : "ঢাকার বাইরে",
+        name: name.trim(), phone: normalizePhone(phone), address: address.trim(),
+      };
+      // Store only a fingerprint and random request ID, never form PII.
+      const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(payload)));
+      const fingerprint = Array.from(new Uint8Array(bytes), (b) => b.toString(16).padStart(2, "0")).join("");
+      const slot = "ihda-checkout:" + product.slug;
+      let previous = attempt.current;
+      if (!previous) { try { previous = JSON.parse(sessionStorage.getItem(slot)); } catch { /* private mode */ } }
+      const current = previous?.fingerprint === fingerprint ? previous : { fingerprint, key: crypto.randomUUID() };
+      attempt.current = current;
+      try { sessionStorage.setItem(slot, JSON.stringify(current)); } catch { /* memory retry still works */ }
       const res = await fetch("/api/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          product: fullName,
-          variant: variant.name,
-          slug: product.slug,
-          price: variant.price,
-          size,
-          qty,
-          area: area === "inside" ? "ঢাকার ভিতরে" : "ঢাকার বাইরে",
-          deliveryCharge,
-          total,
-          name,
-          phone,
-          address,
-          eventId,
-        }),
+        body: JSON.stringify({ ...payload, requestKey: current.key, turnstileToken, companyWebsite, allowRepeat }),
       });
-      if (!res.ok) throw new Error("failed");
-      // Facebook Pixel — Purchase কনভার্সন (server CAPI-র সাথে একই eventID)
-      track(
-        "Purchase",
-        {
-          value: total,
-          currency: "BDT",
-          content_name: fullName,
-          content_ids: [product.slug],
-          content_type: "product",
-        },
-        { eventID: eventId }
-      );
+      const result = await res.json();
+      if (!res.ok || !result.ok) {
+        setDuplicate(result.code === "duplicate_order");
+        if (result.code?.startsWith("verification_")) setSecurityAttempt((n) => n + 1);
+        throw new Error(result.error || "অর্ডার জমা হয়নি। তথ্য যাচাই করে আবার চেষ্টা করুন।");
+      }
+      if (!result.replayed) trackCustom("OrderSubmitted", { content_ids: [product.slug] }, { eventID: current.key });
+      try { sessionStorage.removeItem(slot); } catch { /* optional storage */ }
+      setDuplicate(false);
       setStatus("success");
-    } catch {
+    } catch (err) {
+      setError(err.message || "সংযোগে সমস্যা হয়েছে। একই তথ্য রেখে আবার চেষ্টা করুন।");
       setStatus("error");
+      setTurnstileToken("");
+      setChallengeReset((n) => n + 1);
+    } finally {
+      submitting.current = false;
     }
   }
 
@@ -165,6 +190,9 @@ export default function OrderForm({ product, settings }) {
           onFocusCapture={onFirstInteract}
           className="space-y-5 rounded-3xl bg-white p-6 shadow-lg"
         >
+          <div className="hidden" aria-hidden="true">
+            <label>Company website<input name="companyWebsite" tabIndex={-1} autoComplete="off" value={companyWebsite} onChange={(e) => setCompanyWebsite(e.target.value)} /></label>
+          </div>
           {/* অপশন নির্বাচন (হিজাব-নিকাব / ফুল সেট) */}
           <div>
             <label className="mb-2 block text-sm font-semibold text-gray-700">
@@ -256,7 +284,7 @@ export default function OrderForm({ product, settings }) {
               <span className="w-10 text-center font-semibold">{qty}</span>
               <button
                 type="button"
-                onClick={() => setQty((q) => q + 1)}
+                onClick={() => setQty((q) => Math.min(20, q + 1))}
                 className="px-4 py-2 text-lg text-brand"
               >
                 +
@@ -301,6 +329,8 @@ export default function OrderForm({ product, settings }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="আপনার নাম"
+              autoComplete="name"
+              maxLength={120}
               required
               className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand"
             />
@@ -312,6 +342,9 @@ export default function OrderForm({ product, settings }) {
                   if (phoneErr) setPhoneErr("");
                 }}
                 placeholder="মোবাইল নাম্বার (১১ ডিজিট, যেমন 01712345678)"
+                type="tel"
+                autoComplete="tel"
+                maxLength={24}
                 required
                 inputMode="tel"
                 className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none ${
@@ -328,6 +361,8 @@ export default function OrderForm({ product, settings }) {
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="সম্পূর্ণ ঠিকানা (গ্রাম/বাসা, থানা, জেলা)"
+              autoComplete="street-address"
+              maxLength={500}
               required
               rows={3}
               className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand"
@@ -353,17 +388,23 @@ export default function OrderForm({ product, settings }) {
           </div>
 
           {status === "error" && (
-            <p className="text-center text-sm text-brand">
-              দুঃখিত, সমস্যা হয়েছে। অনুগ্রহ করে WhatsApp এ অর্ডার করুন।
+            <p role="alert" className="text-center text-sm text-red-700">
+              {error}
             </p>
           )}
 
+          {security?.enabled && <TurnstileChallenge siteKey={security.siteKey} onToken={setTurnstileToken} resetKey={challengeReset} />}
+          {securityError && <p role="alert" className="text-sm text-red-700">{securityError} <button type="button" className="underline" onClick={() => setSecurityAttempt((n) => n + 1)}>আবার লোড করুন</button></p>}
+          {duplicate && <button type="button" disabled={status === "sending" || !security || (security.enabled && !turnstileToken)}
+            onClick={(e) => { if (window.confirm("আগের অর্ডারের পাশাপাশি সত্যিই আরেকটি নতুন অর্ডার করবেন?")) handleSubmit(e, true); }}
+            className="w-full rounded-xl border border-amber-500 p-3 text-sm disabled:opacity-50">সত্যিই আরেকটি অর্ডার করতে চাই</button>}
+
           <button
             type="submit"
-            disabled={status === "sending"}
+            disabled={status === "sending" || !security || (security.enabled && !turnstileToken)}
             className="w-full rounded-full bg-brand py-3.5 text-base font-bold text-white shadow-md transition hover:bg-brand-dark disabled:opacity-60"
           >
-            {status === "sending" ? "পাঠানো হচ্ছে..." : "অর্ডার কনফার্ম করুন"}
+            {status === "sending" ? "পাঠানো হচ্ছে..." : !security ? "অর্ডার সেবা লোড হচ্ছে..." : "অর্ডার কনফার্ম করুন"}
           </button>
 
           <button

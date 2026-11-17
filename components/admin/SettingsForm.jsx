@@ -44,6 +44,9 @@ export default function SettingsForm({ initial }) {
     steadfastApiKey: "",
     steadfastSecretKey: "",
     capiAccessToken: "",
+    turnstileEnabled: initial.turnstileEnabled ? "true" : "false",
+    turnstileSiteKey: initial.turnstileSiteKey || "",
+    turnstileSecretKey: "",
   });
   const [logoUrl, setLogoUrl] = useState(initial.logoUrl || "");
   const [faviconUrl, setFaviconUrl] = useState(initial.faviconUrl || "");
@@ -80,7 +83,7 @@ export default function SettingsForm({ initial }) {
     try {
       const res = await fetch("/api/admin/settings", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-admin-action": "save-settings" },
         body: JSON.stringify({ ...f, logoUrl, faviconUrl }),
       });
       const d = await res.json();
@@ -329,6 +332,21 @@ export default function SettingsForm({ initial }) {
         </div>
       </Section>
 
+      <Section title="অর্ডার সুরক্ষা">
+        <p className="text-sm text-gray-600">Duplicate submission ও অল্প সময়ে বারবার অর্ডারের সীমা চালু থাকবে। OTP এখনো যুক্ত হয়নি।</p>
+        <label className="flex items-center gap-2">
+          <input type="checkbox" checked={f.turnstileEnabled === "true"} onChange={(e) => set("turnstileEnabled", String(e.target.checked))} />
+          এই সাইটে Cloudflare Turnstile চালু করুন
+        </label>
+        <label className={lbl}>Turnstile Site Key
+          <input className={inp} value={f.turnstileSiteKey} onChange={(e) => set("turnstileSiteKey", e.target.value)} />
+        </label>
+        <label className={lbl}>Turnstile Secret Key {secretsSet.turnstileSecretKey && "✓ সেট করা আছে"}
+          <input type="password" autoComplete="new-password" className={inp} value={f.turnstileSecretKey} onChange={(e) => set("turnstileSecretKey", e.target.value)} placeholder="খালি রাখলে আগেরটি থাকবে" />
+        </label>
+        <p className="text-xs text-gray-500">ডিফল্টে বন্ধ। Cloudflare-এ এই client domain অনুমোদন করে key দিন। চালু থাকলে যাচাই ব্যর্থ হলে অর্ডার নেওয়া হবে না।</p>
+      </Section>
+
       <Section title="🔌 ইন্টিগ্রেশন (সিক্রেট — এনক্রিপ্টেড)">
         <p className="text-xs text-gray-500">
           সিক্রেট ফিল্ড খালি রাখলে আগেরটাই থাকবে। বদলাতে নতুন মান দিন।
@@ -357,7 +375,7 @@ export default function SettingsForm({ initial }) {
             onChange={(e) => set("capiAccessToken", e.target.value)}
             placeholder={secretsSet.capiAccessToken ? "•••••• (অপরিবর্তিত)" : "Events Manager → Settings → Generate access token"} />
           <p className="mt-1 text-xs text-gray-500">
-            Pixel ID + এই টোকেন থাকলে অর্ডার সার্ভার থেকেও Meta-তে যাবে (iOS/ad-blocker মিস কমায়)।
+            Pixel ID + এই টোকেন থাকলে নতুন অর্ডার কল করে যাচাই করে Pending করার পর Purchase যাবে। Checkout submit-এ Purchase যাবে না। পুরোনো অর্ডার আবার পাঠানো হবে না।
           </p>
         </div>
         <div>

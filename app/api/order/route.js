@@ -1,19 +1,29 @@
 // অর্ডার গ্রহণ → DB তে সেভ → Telegram এ নোটিফিকেশন
-import { createOrder, hasDb } from "@/lib/db";
+import { hasDb } from "@/lib/db";
+import { after } from "next/server";
 import { sendTelegram, formatOrder } from "@/lib/telegram";
-import { sendPurchase } from "@/lib/fb-capi";
 import { getProductBySlug } from "@/lib/products-db";
-import { getSettings } from "@/lib/settings";
+import { getSettings, getCheckoutConfiguration } from "@/lib/settings";
+import { createProtectedOrder, findSubmission, limitCheckout } from "@/lib/checkout-db";
+import { attribution, CheckoutError, digest, normalizePhone, readCheckoutJson, submissionContext, validateTurnstile, validPhone } from "@/lib/checkout-security";
 
 export async function POST(req) {
-  let data;
   try {
-    data = await req.json();
-  } catch {
-    return Response.json({ ok: false, error: "invalid json" }, { status: 400 });
+    return await receiveOrder(req);
+  } catch (err) {
+    const known = err instanceof CheckoutError;
+    if (!known) console.error("Checkout failed");
+    return Response.json({
+      ok: false, code: known ? err.code : "unavailable",
+      error: known ? err.message : "অর্ডার সেভ করা যায়নি। আবার চেষ্টা করুন।",
+    }, { status: known ? err.status : 503, headers: err.status === 429 ? { "Retry-After": "900" } : {} });
   }
+}
 
-  if (!data?.name || !data?.phone || !data?.address) {
+async function receiveOrder(req) {
+  const data = await readCheckoutJson(req);
+
+  if (![data.name, data.phone, data.address].every((value) => typeof value === "string" && value.trim())) {
     return Response.json(
       { ok: false, error: "missing fields" },
       { status: 400 }
@@ -21,8 +31,8 @@ export async function POST(req) {
   }
 
   // ফোন যাচাই — বাংলাদেশি ১১ ডিজিট (01XXXXXXXXX), +880/880 থাকলেও ঠিক
-  const phoneDigits = String(data.phone).replace(/\D/g, "").replace(/^88/, "");
-  if (!/^01\d{9}$/.test(phoneDigits)) {
+  const phoneDigits = normalizePhone(data.phone);
+  if (!validPhone(phoneDigits)) {
     return Response.json(
       { ok: false, error: "invalid phone" },
       { status: 400 }
@@ -36,17 +46,23 @@ export async function POST(req) {
   }
   let product;
   let site;
+  let config;
   try {
-    [product, site] = await Promise.all([
+    [product, site, config] = await Promise.all([
       getProductBySlug(String(data.slug)),
       getSettings(),
+      getCheckoutConfiguration(),
     ]);
   } catch (err) {
-    console.error("Order validation data read failed:", err);
+    console.error("Order validation data unavailable");
     return Response.json({ ok: false, error: "order validation unavailable" }, { status: 503 });
   }
   if (!product) {
     return Response.json({ ok: false, error: "product not found" }, { status: 400 });
+  }
+  const origin = req.headers.get("origin");
+  if (origin && origin !== new URL(config.publicUrl).origin) {
+    return Response.json({ ok: false, error: "invalid origin" }, { status: 403 });
   }
   const requestedVariant = data.variant || data.product?.match?.(/\((.*)\)$/)?.[1];
   const variant = product.variants.find((v) => v.name === requestedVariant);
@@ -71,6 +87,7 @@ export async function POST(req) {
   data.phone = phoneDigits;
   data.address = String(data.address).trim().slice(0, 500);
   data.product = product.name + " (" + variant.name + ")";
+  data.variant = variant.name;
   data.slug = product.slug;
   data.price = Number(variant.price);
   data.size = size;
@@ -84,43 +101,22 @@ export async function POST(req) {
   if (!hasDb()) {
     return Response.json({ ok: false, error: "database is not configured" }, { status: 503 });
   }
-  let saved = data;
-  try {
-    if (hasDb()) {
-      saved = await createOrder(data); // DB row (id সহ)
-    } else {
-      console.log("📦 নতুন অর্ডার (DB সেট করা নেই):", data);
-    }
-  } catch (err) {
-    console.error("DB সেভ ব্যর্থ:", err);
-    // DB ব্যর্থ হলেও Telegram পাঠানোর চেষ্টা করি
+  const context = submissionContext(req, data, data);
+  const replay = await findSubmission(context);
+  if (replay) return Response.json({ ok: true, id: replay.order.id, replayed: true });
+  await limitCheckout(context);
+  if (data.companyWebsite) throw new CheckoutError(400, "invalid_order", "অর্ডারের তথ্য যাচাই করে আবার চেষ্টা করুন।");
+  await validateTurnstile(data.turnstileToken, config, context.ip);
+  if (config.enabled) context.challengeHash = digest("challenge", data.turnstileToken);
+  const result = await createProtectedOrder(data, context, attribution(req, data, config.publicUrl), data.allowRepeat === true);
+  // No Purchase here: manual In Review -> Pending verification owns that event.
+  if (!result.replayed) {
+    try {
+      after(async () => {
+        try { await sendTelegram(formatOrder(result.order)); }
+        catch { console.error("Order notification failed"); }
+      });
+    } catch { console.error("Order notification could not be scheduled"); }
   }
-
-  // Telegram নোটিফিকেশন
-  if (!saved?.id) {
-    return Response.json({ ok: false, error: "order could not be saved" }, { status: 503 });
-  }
-  try {
-    await sendTelegram(formatOrder({ ...data, ...saved }));
-  } catch (err) {
-    console.error("Telegram ব্যর্থ:", err);
-  }
-
-  // Meta Conversions API — server-side Purchase (browser pixel-এর সাথে dedup)
-  try {
-    const xff = req.headers.get("x-forwarded-for") || "";
-    await sendPurchase({
-      order: { ...data, ...saved },
-      eventId: data.eventId, // browser pixel-এর একই event_id
-      clientIp: xff.split(",")[0].trim(),
-      userAgent: req.headers.get("user-agent") || "",
-      fbp: req.cookies.get("_fbp")?.value,
-      fbc: req.cookies.get("_fbc")?.value,
-      sourceUrl: req.headers.get("referer") || "",
-    });
-  } catch (err) {
-    console.error("CAPI ব্যর্থ:", err);
-  }
-
-  return Response.json({ ok: true, id: saved?.id ?? null });
+  return Response.json({ ok: true, id: result.order.id, replayed: result.replayed });
 }

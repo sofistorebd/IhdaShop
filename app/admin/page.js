@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { getOrderDashboard, hasDb } from "@/lib/db";
+import { attachCheckoutInfo } from "@/lib/checkout-db";
 import { getSettings } from "@/lib/settings";
 import { steadfastReady } from "@/lib/steadfast";
 import OrdersTable from "@/components/admin/OrdersTable";
@@ -16,6 +17,7 @@ export default async function AdminPage({ searchParams }) {
   if (hasDb()) {
     try {
       dashboard = await getOrderDashboard({ status: filters.status, page: filters.page });
+      dashboard.orders = await attachCheckoutInfo(dashboard.orders);
     } catch {
       dbError = true;
     }

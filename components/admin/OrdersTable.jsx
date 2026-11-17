@@ -12,6 +12,14 @@ const STATUS_LABEL = {
   cancelled: { text: "বাতিল", cls: "bg-red-100 text-red-700" },
 };
 
+const RISK_LABEL = {
+  repeat_phone: "গত ২৪ ঘণ্টায় এই নম্বরে অন্য অর্ডার আছে",
+  repeat_session: "একই browser session থেকে একাধিক অর্ডার",
+  shared_ip_burst: "একই নেটওয়ার্কে বেশি অর্ডার — এটি ভুয়ার প্রমাণ নয়",
+  repeat_confirmed: "পুনরাবৃত্ত অর্ডার customer আবার নিশ্চিত করেছেন",
+  session_missing: "Browser session যাচাই করা যায়নি",
+};
+
 function formatOrderDateTime(value) {
   if (!value) return "-";
   const date = new Date(value);
@@ -181,7 +189,7 @@ export default function OrdersTable({ initialOrders, pagination, steadfastReady,
     try {
       const res = await fetch("/api/admin/status", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-admin-action": "change-order-status" },
         body: JSON.stringify({ id, status }),
       });
       const result = await res.json();
@@ -313,6 +321,11 @@ export default function OrdersTable({ initialOrders, pagination, steadfastReady,
                     </dl>
                   </div>
                 </div>
+                <div className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">
+                  <p>ফোনের মালিকানা OTP দিয়ে যাচাই করা হয়নি। কল করে নিশ্চিত করুন।</p>
+                  {!o.checkout && <p>এই পুরোনো অর্ডারের checkout history নেই।</p>}
+                  {o.checkout?.risk_flags?.map((flag) => <p key={flag}>⚠ {RISK_LABEL[flag] || "অতিরিক্ত যাচাই প্রয়োজন"}</p>)}
+                </div>
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-3">
                   <button type="button" disabled={actionsBusy} onClick={() => setEditing(o)} className="text-sm font-semibold text-purple-700 hover:underline disabled:opacity-50">তথ্য সংশোধন করুন</button>
                   <div className="flex flex-wrap gap-2">
@@ -417,6 +430,7 @@ export default function OrdersTable({ initialOrders, pagination, steadfastReady,
                   </td>
                   <td className="px-4 py-3 font-semibold text-ink">{bdt(o.total)}</td>
                   <td className="px-4 py-3">
+                    {o.checkout && <p className="mb-1 text-xs text-gray-500">Meta: {({ waiting: "যাচাই বাকি", queued: "পাঠানোর অপেক্ষায়", sent: "পাঠানো হয়েছে", failed: "পাঠানো ব্যর্থ — CAPI সেটিংস দেখুন" })[o.checkout.purchase_state]}</p>}
                     <select
                       value={o.status}
                       disabled={actionsBusy}

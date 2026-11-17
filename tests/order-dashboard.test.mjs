@@ -125,6 +125,7 @@ test("server page renders global totals, passes pagination and resets stale snap
   const Card = () => null;
   const { default: Page } = await load("app/admin/page.js", {
     "@/lib/db": db,
+    "@/lib/checkout-db": { attachCheckoutInfo: async (orders) => orders },
     "@/lib/settings": { getSettings: async () => ({ delivery: {} }) },
     "@/lib/steadfast": { steadfastReady: async () => false },
     "@/components/admin/OrdersTable": Table,
