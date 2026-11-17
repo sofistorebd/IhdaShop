@@ -324,7 +324,13 @@ export default function OrdersTable({ initialOrders, pagination, steadfastReady,
                 <div className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">
                   <p>ফোনের মালিকানা OTP দিয়ে যাচাই করা হয়নি। কল করে নিশ্চিত করুন।</p>
                   {!o.checkout && <p>এই পুরোনো অর্ডারের checkout history নেই।</p>}
-                  {o.checkout?.risk_flags?.map((flag) => <p key={flag}>⚠ {RISK_LABEL[flag] || "অতিরিক্ত যাচাই প্রয়োজন"}</p>)}
+                {(Array.isArray(o.checkout?.risk_flags) ? o.checkout.risk_flags : [])
+  .filter((flag) => typeof flag === "string")
+  .map((flag) => (
+    <p key={flag}>
+      ⚠ {RISK_LABEL[flag] || "অতিরিক্ত যাচাই প্রয়োজন"}
+    </p>
+  ))}
                 </div>
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-3">
                   <button type="button" disabled={actionsBusy} onClick={() => setEditing(o)} className="text-sm font-semibold text-purple-700 hover:underline disabled:opacity-50">তথ্য সংশোধন করুন</button>
