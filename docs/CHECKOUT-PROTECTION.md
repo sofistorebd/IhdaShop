@@ -106,6 +106,11 @@ https://developers.facebook.com/documentation/ads-commerce/conversions-api/dedup
 
 ## Known verification limits
 
+- Automated data-safety tests additionally compare synthetic legacy orders (all statuses), product/media references,
+  encrypted settings, backup authorization records and order sequences before/after repeated schema initialization.
+  They cover interrupted initialization recovery, transactional verification/settings rollback, separate-client
+  database isolation, and cleanup preserving business records. The complete suite has 67 tests.
+  These are isolated in-memory database tests, NOT a restore test of any client's production backup or uploaded files.
 - Provider calls in automated tests are mocked; real Turnstile hostname validation, Meta event acceptance and mobile-browser UX need staging.
 - No client-specific production fraud diagnosis or restored live backup is claimed.
 - OTP is intentionally deferred; someone controlling a plausible phone string may still submit an order.
