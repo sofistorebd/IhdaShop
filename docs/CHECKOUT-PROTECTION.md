@@ -3,7 +3,7 @@
 ## Scope and current status
 
 - Implemented on `feature/checkout-protection`; do not deploy all clients automatically.
-- Optional Twilio Verify SMS is disabled by default. Enable it in Admin Settings after configuring provider credentials.
+- Optional SMS.net.bd checkout verification is disabled by default. Enable it in Admin Settings after configuring provider credentials.
 - No live customer data was used in tests, and no live migration/backup/restore has been performed by this change.
 - Existing orders are not reset, backfilled, or deleted. Three additive side tables are created lazily on first use:
   `checkout_submissions`, `checkout_limits`, `checkout_challenges`.

@@ -229,16 +229,21 @@ test("sessions expire, log out individually and all revoke on password change", 
 
 test("OTP is optional, approves the matching phone/session, and throttles resends", async () => {
   let enabled = false, calls = 0;
-  const sid = "VE" + "a".repeat(32);
+  let code, providerError = 0;
   const phone = "01712345678";
   const cookie = security.sessionCookie();
   const route = await loadModule("app/api/checkout/otp/route.js", {
     "@/lib/db": db, "@/lib/checkout-db": checkout, "@/lib/checkout-security": security,
     "@/lib/settings": { getCheckoutConfiguration: async () => ({ otpEnabled: enabled, publicUrl: "https://shop.test" }) },
-  }, { fetch: async (url, options) => {
+  }, { process: { env: { SMS_NET_BD_API_KEY: "test-key" } }, fetch: async (url, options) => {
     calls++;
-    const sending = url.endsWith("/Verifications");
-    return Response.json({ sid, to: "+88" + phone, status: sending ? "pending" : options.body.get("Code") === "123456" ? "approved" : "pending" });
+    assert.equal(url, "https://api.sms.net.bd/sendsms");
+    assert.equal(options.method, "POST");
+    assert.equal(options.body.get("api_key"), "test-key");
+    assert.equal(options.body.get("to"), "88" + phone);
+    assert.equal(options.body.has("sender_id"), false);
+    code = options.body.get("msg").match(/\b\d{6}\b/)[0];
+    return Response.json({ error: providerError, msg: "test response" });
   } });
   async function request(data, session = cookie) {
     const req = new Request("https://shop.test/api/checkout/otp", { method: "POST", headers: { origin: "https://shop.test" }, body: JSON.stringify({ phone, ...data }) });
@@ -251,12 +256,28 @@ test("OTP is optional, approves the matching phone/session, and throttles resend
   const sent = await (await request({ action: "send" })).json();
   assert.ok(sent.ticket);
   assert.equal((await request({ action: "send" })).status, 429);
-  assert.equal((await request({ action: "check", ticket: sent.ticket, code: "111111" })).status, 400);
-  assert.equal((await request({ action: "check", ticket: sent.ticket, code: "123456" }, security.sessionCookie())).status, 400);
-  const proof = await (await request({ action: "check", ticket: sent.ticket, code: "123456" })).json();
+  const wrong = code === "111111" ? "111112" : "111111";
+  const check = (ticket, candidate = code, session = cookie) => request({ action: "check", ticket, code: candidate }, session);
+  assert.equal((await check(sent.ticket, wrong)).status, 400);
+  assert.equal((await check(sent.ticket, code, security.sessionCookie())).status, 400);
+  const proof = await (await check(sent.ticket)).json();
   const ctx = security.submissionContext({ cookies: { get: () => ({ value: cookie }) } }, {}, { phone });
-  assert.equal(security.readOtpTicket("approved", proof.ticket, ctx), sid);
+  assert.equal(security.readOtpTicket("approved", proof.ticket, ctx), sent.ticket.split(".")[0]);
   assert.throws(() => security.readOtpTicket("approved", proof.ticket, { ...ctx, phoneHash: "different" }));
+  assert.equal((await check(sent.ticket)).status, 400);
+  assert.equal(calls, 1);
+
+  async function resend() {
+    await pg.query("UPDATE checkout_limits SET started_at=now()-interval '61 seconds' WHERE key LIKE 'otp:cooldown:%'");
+    return request({ action: "send" });
+  }
+  const second = await (await resend()).json();
+  await pg.query("UPDATE checkout_sms_codes SET expires_at=now()-interval '1 second'");
+  assert.equal((await check(second.ticket)).status, 400);
+  providerError = 417;
+  const rejected = await resend();
+  assert.equal(rejected.status, 503);
+  assert.equal((await rejected.json()).ticket, undefined);
 });
 
 test("cash received is recorded once and cancelled orders add no sales", async () => {

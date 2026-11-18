@@ -69,7 +69,7 @@ export default function OrderForm({ product, settings }) {
 
   const submitDisabled = otpBusy || status === "sending" || !security ||
     (security.enabled && !turnstileToken) ||
-    (security.otpEnabled && !otpProof && (!otpTicket || otpCode.length < 4));
+    (security.otpEnabled && !otpProof && (!otpTicket || otpCode.length !== 6));
 
   function buildSummary() {
     return [
@@ -439,7 +439,7 @@ export default function OrderForm({ product, settings }) {
             </button>
             {otpTicket && <label className="block">SMS-এ পাওয়া কোড
               <input className="ml-2 rounded border p-2" inputMode="numeric" autoComplete="one-time-code" value={otpCode}
-                onChange={e => setOtpCode(e.target.value.replace(/[০-৯]/g, c => String(c.charCodeAt(0) - 0x09e6)).replace(/\D/g, "").slice(0, 10))} />
+                onChange={e => setOtpCode(e.target.value.replace(/[০-৯]/g, c => String(c.charCodeAt(0) - 0x09e6)).replace(/\D/g, "").slice(0, 6))} />
             </label>}
           </div>}
           {security?.enabled && <TurnstileChallenge siteKey={security.siteKey} onToken={setTurnstileToken} resetKey={challengeReset} />}

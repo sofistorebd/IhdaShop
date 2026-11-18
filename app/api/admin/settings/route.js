@@ -19,8 +19,8 @@ export async function POST(req) {
   }
   if (Object.hasOwn(data, "otpEnabled")) {
     if (!["true", "false", true, false].includes(data.otpEnabled)) return Response.json({ error: "OTP setting সঠিক নয়।" }, { status: 400 });
-    if (String(data.otpEnabled) === "true" && !(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_VERIFY_SERVICE_SID)) {
-      return Response.json({ error: "আগে সার্ভারে Twilio Verify-এর তিনটি credential সেট করুন।" }, { status: 400 });
+    if (String(data.otpEnabled) === "true" && !process.env.SMS_NET_BD_API_KEY?.trim()) {
+      return Response.json({ error: "আগে Coolify-তে SMS_NET_BD_API_KEY সেট করুন।" }, { status: 400 });
     }
   }
   for (const key of HEADER_COLOR_KEYS) {

@@ -337,7 +337,7 @@ export default function SettingsForm({ initial }) {
         <p className="text-sm text-gray-600">Duplicate submission ও অল্প সময়ে বারবার অর্ডারের সীমা চালু থাকবে।</p>
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={f.otpEnabled === "true"} onChange={e => set("otpEnabled", String(e.target.checked))} />
-          প্রতিটি ওয়েব অর্ডারে SMS OTP যাচাই করুন (Twilio Verify)
+          প্রতিটি ওয়েব অর্ডারে SMS OTP যাচাই করুন (SMS.net.bd)
         </label>
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={f.turnstileEnabled === "true"} onChange={(e) => set("turnstileEnabled", String(e.target.checked))} />
