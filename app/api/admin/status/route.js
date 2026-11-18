@@ -21,7 +21,8 @@ export async function POST(req) {
       after(async () => { try { await flushPurchases(); } catch { /* scheduler retries */ } });
     } catch { /* Status is already committed; the scheduler will drain the queue. */ }
     return Response.json({ ok: true });
-  } catch {
+  } catch (err) {
+    if (err?.code === "order_locked") return Response.json({ ok: false, error: err.message }, { status: 409 });
     return Response.json({ ok: false, error: "স্ট্যাটাস সেভ হয়নি।" }, { status: 503 });
   }
 }

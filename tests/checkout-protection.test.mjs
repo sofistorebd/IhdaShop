@@ -258,3 +258,25 @@ test("OTP is optional, approves the matching phone/session, and throttles resend
   assert.equal(security.readOtpTicket("approved", proof.ticket, ctx), sid);
   assert.throws(() => security.readOtpTicket("approved", proof.ticket, { ...ctx, phoneHash: "different" }));
 });
+
+test("cash received is recorded once and cancelled orders add no sales", async () => {
+  const before = (await db.getOrderDashboard()).stats;
+  const route = await loadModule("app/api/admin/settlements/route.js", {
+    "@/lib/admin-request": { authorizeAdminRequest: async () => null }, "@/lib/db": db,
+  });
+  const id = (await db.createOrder(order)).id;
+  const settle = () => route.POST({ json: async () => ({ id, reference: "statement-01", amount: 840 }) });
+  await db.updateOrderStatus(id, "pending");
+  assert.equal((await db.getOrderDashboard()).stats.openValue, before.openValue + order.total);
+  await db.updateOrderStatus(id, "cancelled");
+  assert.equal((await db.getOrderDashboard()).stats.revenue, before.revenue);
+  assert.equal((await settle()).status, 409);
+  await db.updateOrderStatus(id, "delivered");
+  assert.equal((await settle()).status, 200);
+  assert.equal((await settle()).status, 409);
+  const after = (await db.getOrderDashboard()).stats;
+  assert.equal(after.revenue, before.revenue + order.total);
+  assert.equal(after.openValue, before.openValue);
+  assert.equal(after.settled, before.settled + 840);
+  await assert.rejects(checkout.changeReviewedOrderStatus(id, "inreview"), err => err.code === "order_locked");
+});

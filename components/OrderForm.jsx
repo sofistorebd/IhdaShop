@@ -67,6 +67,10 @@ export default function OrderForm({ product, settings }) {
   const bdt = (n) => "৳" + n.toLocaleString("bn-BD");
   const fullName = `${product.name} (${variant.name})`;
 
+  const submitDisabled = otpBusy || status === "sending" || !security ||
+    (security.enabled && !turnstileToken) ||
+    (security.otpEnabled && !otpProof && (!otpTicket || otpCode.length < 4));
+
   function buildSummary() {
     return [
       `🛍️ নতুন অর্ডার — ${site.brandName}`,
@@ -440,13 +444,13 @@ export default function OrderForm({ product, settings }) {
           </div>}
           {security?.enabled && <TurnstileChallenge siteKey={security.siteKey} onToken={setTurnstileToken} resetKey={challengeReset} />}
           {securityError && <p role="alert" className="text-sm text-red-700">{securityError} <button type="button" className="underline" onClick={() => setSecurityAttempt((n) => n + 1)}>আবার লোড করুন</button></p>}
-          {duplicate && <button type="button" disabled={otpBusy || (security?.otpEnabled && !otpProof && (!otpTicket || otpCode.length < 4)) || status === "sending" || !security || (security.enabled && !turnstileToken)}
-            onClick={(e) => { if (window.confirm("আগের অর্ডারের পাশাপাশি সত্যিই আরেকটি নতুন অর্ডার করবেন?")) handleSubmit(e, true); }}
+          {duplicate && <button type="button" disabled={submitDisabled}
+            onClick={(e) => { if (window.confirm("আগের অর্ডারের পাশাপাশি সত্যিই আরেকটি নতুন অর্ডার করবেন?")) return handleSubmit(e, true); }}
             className="w-full rounded-xl border border-amber-500 p-3 text-sm disabled:opacity-50">সত্যিই আরেকটি অর্ডার করতে চাই</button>}
 
           <button
             type="submit"
-            disabled={otpBusy || (security?.otpEnabled && !otpProof && (!otpTicket || otpCode.length < 4)) || status === "sending" || !security || (security.enabled && !turnstileToken)}
+            disabled={submitDisabled}
             className="w-full rounded-full bg-brand py-3.5 text-base font-bold text-white shadow-md transition hover:bg-brand-dark disabled:opacity-60"
           >
             {status === "sending" ? "পাঠানো হচ্ছে..." : !security ? "অর্ডার সেবা লোড হচ্ছে..." : "অর্ডার কনফার্ম করুন"}

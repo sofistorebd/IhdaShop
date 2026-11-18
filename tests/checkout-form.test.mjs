@@ -9,7 +9,7 @@ function nodes(tree, predicate) {
   return [...(predicate(tree) ? [tree] : []), ...nodes(tree.props?.children, predicate)];
 }
 
-async function formHarness({ enabled = false, reply = async () => Response.json({ ok: true, id: 10, replayed: false }) } = {}) {
+async function formHarness({ enabled = false, otpEnabled = false, reply = async () => Response.json({ ok: true, id: 10, replayed: false }) } = {}) {
   const state = [], refs = [], effects = [], pending = [], requests = [], events = [], storage = new Map();
   let s = 0, r = 0, e = 0;
   const Form = (await loadModule("components/OrderForm.jsx", {
@@ -32,7 +32,11 @@ async function formHarness({ enabled = false, reply = async () => Response.json(
     sessionStorage: { getItem: (key) => storage.get(key) || null, setItem: (key, value) => storage.set(key, value), removeItem: (key) => storage.delete(key) },
     window: { confirm: () => true },
     fetch: async (url, options) => {
-      if (url === "/api/checkout/config") return Response.json({ ok: true, enabled, siteKey: "public" });
+      if (url === "/api/checkout/config") return Response.json({ ok: true, enabled, otpEnabled, siteKey: "public" });
+      if (url === "/api/checkout/otp") {
+        const { action, code } = JSON.parse(options.body);
+        return Response.json({ ok: true, ticket: action === "send" ? "sent" : code === "123456" ? "approved" : "" });
+      }
       requests.push(JSON.parse(options.body));
       return reply(requests.length);
     },
@@ -87,9 +91,19 @@ test("duplicate warning offers a deliberate second order with explicit confirmat
     : Response.json({ ok: true, id: 11, replayed: false }) });
   await ui.submit();
   const repeat = nodes(ui.render(), (n) => n.type === "button" && n.props.children === "সত্যিই আরেকটি অর্ডার করতে চাই")[0];
-  // The UI click handler starts the asynchronous submit; wait for its request.
-  repeat.props.onClick({ preventDefault() {} });
-  for (let n = 0; n < 20 && ui.requests.length < 2; n++) await new Promise(setImmediate);
+  await repeat.props.onClick({ preventDefault() {} });
   assert.equal(ui.requests[1].allowRepeat, true);
   assert.equal(ui.requests[0].requestKey, ui.requests[1].requestKey);
+});
+
+test("OTP checkout allows submission after entering the SMS code", async () => {
+  const ui = await formHarness({ otpEnabled: true });
+  const submitButton = () => nodes(ui.render(), n => n.props?.type === "submit")[0];
+  assert.equal(submitButton().props.disabled, true);
+  await nodes(ui.render(), n => n.type === "button" && n.props.children === "এই নম্বরে OTP পাঠান")[0].props.onClick();
+  const input = nodes(ui.render(), n => n.props?.autoComplete === "one-time-code")[0];
+  input.props.onChange({ target: { value: "১২৩৪৫৬" } });
+  assert.equal(submitButton().props.disabled, false);
+  await ui.submit();
+  assert.equal(ui.requests[0].otpProof, "approved");
 });
