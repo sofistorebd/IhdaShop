@@ -3,7 +3,7 @@
 ## Scope and current status
 
 - Implemented on `feature/checkout-protection`; do not deploy all clients automatically.
-- No OTP/SMS provider integration, SMS cost, or claim of phone ownership verification.
+- Optional Twilio Verify SMS is disabled by default. Enable it in Admin Settings after configuring provider credentials.
 - No live customer data was used in tests, and no live migration/backup/restore has been performed by this change.
 - Existing orders are not reset, backfilled, or deleted. Three additive side tables are created lazily on first use:
   `checkout_submissions`, `checkout_limits`, `checkout_challenges`.
@@ -50,7 +50,7 @@
    A unique token-hash record prevents token reuse across simultaneous requests even before Cloudflare replay detection converges.
 6. Missing config, provider outage and failed verification reject new orders; they do not silently bypass protection.
    A replay of an already committed request can still return its original acknowledgement.
-7. Public `GET /api/checkout/config` returns only enabled/siteKey, has no-store caching and issues a signed HttpOnly session cookie.
+7. Public `GET /api/checkout/config` returns the public Turnstile settings and OTP switch, has no-store caching and issues a signed HttpOnly session cookie.
 8. Keep `ENCRYPTION_KEY` (or the existing ADMIN_PASSWORD fallback) stable. Do not rotate it casually.
 9. Set `NEXT_PUBLIC_SITE_URL` to the actual HTTPS client domain. Use one canonical domain for checkout/admin.
    Origin mismatches must be fixed in configuration, not by accepting arbitrary forwarded headers.
@@ -113,7 +113,7 @@ https://developers.facebook.com/documentation/ads-commerce/conversions-api/dedup
   These are isolated in-memory database tests, NOT a restore test of any client's production backup or uploaded files.
 - Provider calls in automated tests are mocked; real Turnstile hostname validation, Meta event acceptance and mobile-browser UX need staging.
 - No client-specific production fraud diagnosis or restored live backup is claimed.
-- OTP is intentionally deferred; someone controlling a plausible phone string may still submit an order.
+- With OTP disabled, checkout accepts plausible phone numbers. With OTP enabled, submitting a new order requires a fresh verification bound to the phone and browser session.
 - Existing dependency audit reports 4 advisories (2 high, 2 moderate) in PostCSS/source-map/build tooling,
   unrelated to the new PGlite test dependency. They require a separate reviewed update.
 - Existing `lib/storage.js` filesystem-tracing build warnings remain unchanged.

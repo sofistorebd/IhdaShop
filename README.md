@@ -1,6 +1,6 @@
 # STORE — E‑commerce Template 🛍️
 
-Next.js + Tailwind দিয়ে তৈরি white‑label সিঙ্গেল-পেজ অর্ডার সাইট (landing + product page)। ব্র্যান্ড, রঙ, লোগো, প্রোডাক্ট, রিভিউ, ইন্টিগ্রেশন — সব admin থেকে। প্রতি client এর নিজের GitHub + Vercel এ deploy করার জন্য।
+Next.js + Tailwind দিয়ে তৈরি white‑label সিঙ্গেল-পেজ অর্ডার সাইট (landing + product page)। ব্র্যান্ড, রঙ, লোগো, প্রোডাক্ট, রিভিউ, ইন্টিগ্রেশন — সব admin থেকে। প্রতি দোকানের নিজস্ব PostgreSQL ও স্থায়ী আপলোড ভলিউমসহ Coolify-তে চালানোর জন্য।
 
 **বৈশিষ্ট্য**
 - ২ পেজ: মেইন পেজ (প্রোডাক্ট গ্রিড) + সিঙ্গেল প্রোডাক্ট পেজ (`/product/[slug]`) যেখানে অর্ডার ফর্ম
@@ -57,7 +57,7 @@ STEADFAST_SECRET_KEY=
 ADMIN_PASSWORD=          # /admin এ লগইন পাসওয়ার্ড
 ```
 
-কোনোটা সেট না থাকলেও সাইট চলবে — শুধু ওই ফিচারটা নিষ্ক্রিয় থাকবে (অ্যাডমিনে warning দেখাবে)।
+অর্ডার ও অ্যাডমিন লগইনের জন্য PostgreSQL প্রয়োজন। প্রোডাকশনে ADMIN_PASSWORD, স্থায়ী ENCRYPTION_KEY ও HTTPS সাইটের NEXT_PUBLIC_SITE_URL সেট করুন।
 
 ### Database (Neon)
 1. https://neon.tech এ ফ্রি account → নতুন project।
@@ -74,26 +74,39 @@ ADMIN_PASSWORD=          # /admin এ লগইন পাসওয়ার্�
 
 ---
 
-## 🌐 নতুন GitHub + Vercel এ Live করা
+## Coolify-তে ডিপ্লয়
 
-### ধাপ ১ — GitHub এ তোলা
-নতুন GitHub account এ খালি repo বানাও (যেমন `store`), তারপর:
+1. রিপোজিটরি যুক্ত করে Dockerfile build pack ও port 3000 নির্বাচন করুন। প্রতিটি দোকানের জন্য আলাদা PostgreSQL ব্যবহার করুন।
+2. Coolify-এর environment settings-এ `.env.example` অনুযায়ী মান দিন। প্রথম লগইনের জন্য শক্তিশালী ADMIN_PASSWORD দিন। ENCRYPTION_KEY নিরাপদে সংরক্ষণ করুন। সাইটের আসল HTTPS ডোমেইন দিন।
+3. একটি persistent volume ঠিক `/app/storage/uploads`-এ mount করুন। UPLOAD_DIR বদলালে mount-ও বদলান। ব্যাকআপ ও Meta retry worker চালানোর জন্য অন্তত একটি app instance সর্বক্ষণ চালু রাখুন।
+4. ডিপ্লয়ের পর অ্যাডমিনে লগইন করে একটি ছবি আপলোড করুন। পুনরায় ডিপ্লয়ের পর একই ছবি খুলুন। স্টেজিংয়ে অর্ডার জমা, যাচাই ও স্ট্যাটাস মিলিয়ে দেখুন। সেশন আপডেটের পর আগের ডিভাইসগুলোকে আবার লগইন করতে হবে।
+
+### SMS OTP
+
+ডিফল্টে বন্ধ। Twilio Verify-তে একটি SMS service তৈরি করুন ও বাংলাদেশের নম্বরে পাঠানোর অনুমতি নিশ্চিত করুন। Coolify-তে TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN ও TWILIO_VERIFY_SERVICE_SID সেট করে redeploy করুন। এরপর **অ্যাডমিন → সেটিংস → অর্ডার সুরক্ষা → প্রতিটি ওয়েব অর্ডারে SMS OTP যাচাই করুন** নির্বাচন করে সেভ করুন। বন্ধ করতে টিক তুলে সেভ করুন। চালু অবস্থায় একটি আসল নম্বর দিয়ে ডেলিভারি পরীক্ষা করুন। OTP যাচাইয়ের পরেও অর্ডার In Review-তে যায়।
+
+### কুরিয়ার ও হিসাব
+
+Pending বা Confirmed অর্ডার Steadfast-এ পাঠানো যায়। সংযোগ বিচ্ছিন্ন হলে তালিকা রিফ্রেশ করে `ORD-<id>` ইনভয়েস পোর্টালে খুঁজুন। পাঁচ মিনিট পরে **ইনভয়েস মিলিয়ে নিন** থেকে বিদ্যমান consignment ID দিন। বুকিং হয়নি নিশ্চিত হলেই NONE লিখে পুনরায় পাঠান। Delivered অর্ডারে **কুরিয়ার পেমেন্ট লিখুন** থেকে স্টেটমেন্ট অনুযায়ী প্রাপ্ত টাকা ও রেফারেন্স লিখুন। রিপোর্টে ডেলিভার্ড মূল্য অর্ডার তৈরির তারিখ অনুযায়ী দেখানো হয়।
+
+### ব্যাকআপ ফিরিয়ে দেখা
+
+স্টেজিংয়ের জন্য আলাদা খালি ডেটাবেস ও ভলিউম তৈরি করুন। লাইভ সেটিংস বা গ্রাহক নোটিফিকেশন চালু করবেন না। Google Drive থেকে ব্যাকআপ এনে প্রকল্পের checkout-এ Node 22+, npm dependencies ও PostgreSQL client দিয়ে চালান। মূল ব্যাকআপের BACKUP_ENCRYPTION_KEY (অথবা ENCRYPTION_KEY) এবং খালি স্টেজিং ডেটাবেসের RESTORE_DATABASE_URL আগে environment-এ সেট করুন।
 
 ```bash
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin https://github.com/your-username/store.git
-git push -u origin main
+mkdir restore-check
+chmod 700 restore-check
+node --input-type=module -e 'import {decryptBackupFile} from "./lib/backup-artifact.js"; await decryptBackupFile(process.argv[1], "restore-check/archive.tar.gz")' ./backup.tar.gz.enc
+tar -xzf restore-check/archive.tar.gz -C restore-check
+pg_restore --single-transaction --no-owner --no-acl --dbname="$RESTORE_DATABASE_URL" restore-check/database.dump
 ```
 
-### ধাপ ২ — Vercel এ deploy
-1. নতুন Vercel account এ login করো (GitHub দিয়ে)।
-2. **Add New → Project → Import** করো ওই repo।
-3. **Environment Variables** এ উপরের সবগুলো (`DATABASE_URL`, `TELEGRAM_*`, `STEADFAST_*`, `ADMIN_PASSWORD`) যোগ করো।
-4. **Deploy** → কিছুক্ষণ পর live লিঙ্ক পাবে।
+স্টেজিং ভলিউমে restore-check/uploads-এর ভেতরের ফাইলগুলো রাখুন। বাইরের ইন্টিগ্রেশনে সংযোগ বন্ধ রেখে স্টেজিং অ্যাপে একটি অর্ডার ও তার পণ্যের ছবি খুলে যাচাই করুন। ব্যাকআপে গ্রাহকের তথ্য থাকে, তাই রিস্টোর করা কপি সুরক্ষিত রাখুন।
 
-> Vercel এ Neon Postgres এক ক্লিকে যোগ করা যায়: Project → **Storage → Create Database → Neon** (DATABASE_URL স্বয়ংক্রিয়ভাবে বসে)।
+### পরিবর্তন যাচাই
 
-> পরে অন্য GitHub/Vercel account এ transfer:
-> GitHub: Repo Settings → Transfer ownership · Vercel: নতুন account এ আবার Import বা Project Settings → Transfer।
+```bash
+npm ci
+npm test
+npm run build
+```

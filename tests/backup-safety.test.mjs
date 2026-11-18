@@ -262,7 +262,7 @@ test("backup encryption round-trips and hides plaintext", async () => {
   try {
     await writeFile(source, plaintext);
     const artifact = await loadModule("lib/backup-artifact.js", {
-      "./db": { getConnectionString: () => "" },
+      "./db.js": { getConnectionString: () => "" },
     }, { process: fakeProcess });
     await artifact.encryptBackupFile(source, encrypted);
     assert.equal((await readFile(encrypted)).includes(plaintext.subarray(0, 30)), false);
