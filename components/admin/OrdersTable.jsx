@@ -97,6 +97,27 @@ export default function OrdersTable({ initialOrders, pagination, steadfastReady,
 
   const bdt = (n) => "৳" + Number(n).toLocaleString("bn-BD");
 
+  function canDispatch(order) {
+    return ["pending", "confirmed"].includes(order.status) && !order.consignment_id && !order.tracking_code && !order.dispatch_started_at;
+  }
+
+  async function reconcile(order) {
+    const result = window.prompt(`Steadfast পোর্টালে ORD-${order.id} খুঁজুন। বুকিং থাকলে consignment ID লিখুন। বুকিং নেই নিশ্চিত হলে NONE লিখুন।`);
+    if (!result?.trim()) return;
+    const tracking = result.trim() === "NONE" ? "" : window.prompt("Tracking code (ঐচ্ছিক)", "");
+    if (tracking === null) return;
+    setBusy(order.id);
+    try {
+      const res = await fetch("/api/admin/steadfast/reconcile", {
+        method: "POST", headers: { "Content-Type": "application/json", "x-admin-action": "reconcile-dispatch" },
+        body: JSON.stringify({ id: order.id, result: result.trim(), tracking: tracking.trim() }),
+      });
+      const data = await res.json();
+      setMsg(data.ok ? "কুরিয়ার তথ্য মিলিয়ে সেভ হয়েছে।" : data.error);
+    } catch { setMsg("কুরিয়ার তথ্য সেভ হয়নি।"); }
+    finally { setBusy(null); refreshOrders(); }
+  }
+
   function toggle(id) {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -145,11 +166,12 @@ export default function OrdersTable({ initialOrders, pagination, steadfastReady,
       setMsg("❌ " + err.message);
     } finally {
       setBusy(null);
+      refreshOrders();
     }
   }
 
   async function bulkSend() {
-    const ids = activeOrders.filter((o) => selected.has(o.id)).map((o) => o.id);
+    const ids = activeOrders.filter((o) => selected.has(o.id) && canDispatch(o)).map((o) => o.id);
     if (!ids.length) return;
     setBulkBusy(true);
     setMsg("");
@@ -351,7 +373,7 @@ export default function OrdersTable({ initialOrders, pagination, steadfastReady,
             {selected.size.toLocaleString("bn-BD")}টি নির্বাচিত
           </span>
           <button
-            disabled={!steadfastReady || actionsBusy}
+            disabled={!steadfastReady || actionsBusy || !activeOrders.some(o => selected.has(o.id) && canDispatch(o))}
             onClick={bulkSend}
             className="rounded-full bg-brand px-4 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-40"
             title={steadfastReady ? "" : "Steadfast API key সেট করা নেই"}
@@ -459,7 +481,9 @@ export default function OrdersTable({ initialOrders, pagination, steadfastReady,
                           <p className="text-gray-400">ট্র্যাকিং: {o.tracking_code}</p>
                         )}
                       </div>
-                    ) : (
+                    ) : o.dispatch_started_at ? (
+                      <button disabled={actionsBusy} onClick={() => reconcile(o)}>ইনভয়েস মিলিয়ে নিন</button>
+                    ) : canDispatch(o) && (
                       <button
                         disabled={!steadfastReady || actionsBusy}
                         onClick={() => sendToSteadfast(o.id)}

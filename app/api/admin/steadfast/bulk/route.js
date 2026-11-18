@@ -1,6 +1,5 @@
-// একাধিক অর্ডার এক ক্লিকে Steadfast এ পাঠানো
-import { getOrder, setCourierInfo } from "@/lib/db";
-import { createConsignment, steadfastReady } from "@/lib/steadfast";
+import { dispatchOrder } from "@/lib/dispatch";
+import { steadfastReady } from "@/lib/steadfast";
 
 export async function POST(req) {
   if (!(await steadfastReady())) {
@@ -17,29 +16,8 @@ export async function POST(req) {
   const results = [];
   for (const id of ids) {
     try {
-      const order = await getOrder(id);
-      if (!order) {
-        results.push({ id, ok: false, error: "পাওয়া যায়নি" });
-        continue;
-      }
-      if (order.consignment_id) {
-        results.push({
-          id,
-          ok: true,
-          skipped: true,
-          consignment_id: order.consignment_id,
-          tracking_code: order.tracking_code,
-        });
-        continue;
-      }
-      const c = await createConsignment(order);
-      await setCourierInfo(id, String(c.consignment_id), c.tracking_code);
-      results.push({
-        id,
-        ok: true,
-        consignment_id: String(c.consignment_id),
-        tracking_code: c.tracking_code,
-      });
+      const result = await dispatchOrder(id);
+      results.push({ id, ok: true, ...result });
     } catch (err) {
       results.push({ id, ok: false, error: err?.message || "ব্যর্থ" });
     }
