@@ -1,20 +1,14 @@
 import { cookies } from "next/headers";
-import { ADMIN_COOKIE, sessionToken } from "@/lib/auth";
-import { verifyAdminPassword } from "@/lib/admin-auth";
+import { ADMIN_COOKIE, SESSION_SECONDS } from "@/lib/auth";
+import { loginAdmin } from "@/lib/admin-auth";
 
 export async function POST(req) {
   const { password } = await req.json().catch(() => ({}));
 
-  const token = await sessionToken();
+  let token;
+  try { token = await loginAdmin(password); }
+  catch { return Response.json({ ok: false, error: "লগইন সেবা সাময়িকভাবে বন্ধ।" }, { status: 503 }); }
   if (!token) {
-    return Response.json(
-      { ok: false, error: "সার্ভারে ENCRYPTION_KEY সেট করা নেই — Vercel env এ যোগ করো।" },
-      { status: 500 }
-    );
-  }
-
-  const ok = await verifyAdminPassword(password);
-  if (!ok) {
     return Response.json({ ok: false, error: "ভুল পাসওয়ার্ড" }, { status: 401 });
   }
 
@@ -24,7 +18,7 @@ export async function POST(req) {
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7, // ৭ দিন
+    maxAge: SESSION_SECONDS, // ৭ দিন
   });
   return Response.json({ ok: true });
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ADMIN_COOKIE, sessionToken } from "@/lib/auth";
+import { ADMIN_COOKIE, validSession } from "@/lib/auth";
 
 export async function proxy(req) {
   const { pathname } = req.nextUrl;
@@ -13,9 +13,7 @@ export async function proxy(req) {
     return NextResponse.next();
   }
 
-  const token = await sessionToken(); // সিক্রেট সেট না থাকলে null → কেউ ঢুকতে পারবে না
-  const cookie = req.cookies.get(ADMIN_COOKIE)?.value;
-  const ok = Boolean(token) && cookie === token;
+  const ok = await validSession(req.cookies.get(ADMIN_COOKIE)?.value);
 
   if (!ok) {
     if (pathname.startsWith("/api/")) {

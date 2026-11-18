@@ -40,7 +40,7 @@ async function setup({ rows = [{ id: 7 }], dbFails = false } = {}) {
     },
   }, { process: { env: { DATABASE_URL: "postgres://isolated-test" } } });
   const auth = await load("lib/admin-request.js", {
-    "./auth": { ADMIN_COOKIE: "store_admin", sessionToken: async () => "valid-token" },
+    "./auth": { ADMIN_COOKIE: "store_admin", validSession: async (value) => value === "valid-token" },
   }, { process: { env: { NEXT_PUBLIC_SITE_URL: "https://shop.test/" } } });
   const route = await load("app/api/admin/orders/[id]/route.js", {
     "@/lib/db": db, "@/lib/admin-request": auth,

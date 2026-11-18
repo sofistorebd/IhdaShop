@@ -45,7 +45,7 @@ function adminRequest({ cookie = "valid-token", origin = "https://shop.test", ac
 
 test("backup admin routes require a valid session and same-origin action", async () => {
   const auth = await loadModule("lib/admin-request.js", {
-    "./auth": { ADMIN_COOKIE: "store_admin", sessionToken: async () => "valid-token" },
+    "./auth": { ADMIN_COOKIE: "store_admin", validSession: async (value) => value === "valid-token" },
   }, { process: { env: {} } });
   assert.equal(await auth.authorizeAdminRequest(adminRequest(), { mutation: true }), null);
   assert.equal((await auth.authorizeAdminRequest(adminRequest({ cookie: "wrong" }))).status, 401);
@@ -59,7 +59,7 @@ test("backup and disconnect accept the configured public origin behind a proxy",
     { NEXT_PUBLIC_SITE_URL: "https://shop.test/" },
   ]) {
     const auth = await loadModule("lib/admin-request.js", {
-      "./auth": { ADMIN_COOKIE: "store_admin", sessionToken: async () => "valid-token" },
+      "./auth": { ADMIN_COOKIE: "store_admin", validSession: async (value) => value === "valid-token" },
     }, { process: { env } });
     for (const action of ["run", "disconnect"]) {
       const req = adminRequest({ url: `http://0.0.0.0:3000/api/admin/google-drive/${action}` });
@@ -70,7 +70,7 @@ test("backup and disconnect accept the configured public origin behind a proxy",
 
 test("configured backup origin rejects forged headers, other clients and missing CSRF checks", async () => {
   const auth = await loadModule("lib/admin-request.js", {
-    "./auth": { ADMIN_COOKIE: "store_admin", sessionToken: async () => "valid-token" },
+    "./auth": { ADMIN_COOKIE: "store_admin", validSession: async (value) => value === "valid-token" },
   }, { process: { env: { GOOGLE_OAUTH_REDIRECT_URI: "https://shop.test/api/admin/google-drive/callback" } } });
   for (const origin of [null, "null", "https://other-client.test", "http://shop.test", "https://shop.test:444", "https://shop.test.attacker.test", "http://0.0.0.0:3000"]) {
     const req = adminRequest({ origin, url: "http://0.0.0.0:3000/api/admin/google-drive/run", extraHeaders: {
@@ -85,7 +85,7 @@ test("configured backup origin rejects forged headers, other clients and missing
 test("invalid configured origins fail closed instead of trusting the request URL", async () => {
   for (const configured of ["not-a-url", "ftp://shop.test", "https://user:password@shop.test"]) {
     const auth = await loadModule("lib/admin-request.js", {
-      "./auth": { ADMIN_COOKIE: "store_admin", sessionToken: async () => "valid-token" },
+      "./auth": { ADMIN_COOKIE: "store_admin", validSession: async (value) => value === "valid-token" },
     }, { process: { env: { GOOGLE_OAUTH_REDIRECT_URI: configured } } });
     assert.equal((await auth.authorizeAdminRequest(adminRequest(), { mutation: true })).status, 403);
   }

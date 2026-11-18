@@ -38,7 +38,7 @@ async function statusHandler() {
   const changes = [];
   const jobs = [];
   const auth = await loadModule("lib/admin-request.js", {
-    "./auth": { ADMIN_COOKIE: "store_admin", sessionToken: async () => "valid-token" },
+    "./auth": { ADMIN_COOKIE: "store_admin", validSession: async (value) => value === "valid-token" },
   }, { process: { env: { NEXT_PUBLIC_SITE_URL: "https://shop.test" } } });
   const route = await loadModule("app/api/admin/status/route.js", {
     "next/server": { after: (job) => jobs.push(job) },
@@ -90,7 +90,7 @@ test("public checkout config never returns the secret and sets a signed HttpOnly
 test("security settings require admin origin checks and complete keys before enabling", async () => {
   let writes = 0;
   const auth = await loadModule("lib/admin-request.js", {
-    "./auth": { ADMIN_COOKIE: "store_admin", sessionToken: async () => "valid-token" },
+    "./auth": { ADMIN_COOKIE: "store_admin", validSession: async (value) => value === "valid-token" },
   }, { process: { env: { NEXT_PUBLIC_SITE_URL: "https://shop.test" } } });
   const colors = await loadModule("lib/header-colors.js");
   const route = await loadModule("app/api/admin/settings/route.js", {

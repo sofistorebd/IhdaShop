@@ -29,6 +29,7 @@ export default function PasswordForm() {
       setCurrent("");
       setNext("");
       setConfirm("");
+      window.location.assign("/admin/login");
     } catch (err) {
       setMsg("❌ " + err.message);
     }
