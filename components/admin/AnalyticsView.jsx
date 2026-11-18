@@ -86,10 +86,10 @@ export default function AnalyticsView({ visitors, orders, rangeLabel = "৩০ �
 
       {/* বিক্রি */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard icon="💰" tone="green" label="আজকের বিক্রি" value={taka(o.revToday)} />
+        <StatCard icon="💰" tone="green" label="আজকের অর্ডারের ডেলিভার্ড মূল্য" value={taka(o.revToday)} />
         <StatCard icon="📦" label="আজকের অর্ডার" value={bn(o.ordersToday)} />
-        <StatCard icon="🧮" tone="ink" label={`গড় অর্ডার (${rangeLabel})`} value={taka(o.aov)} />
-        <StatCard icon="🏦" tone="amber" label={`${rangeLabel}-এ বিক্রি`} value={taka(o.revRange)} />
+        <StatCard icon="🧮" tone="ink" label={`গড় ডেলিভার্ড অর্ডার (${rangeLabel})`} value={taka(o.aov)} />
+        <StatCard icon="🏦" tone="amber" label={`${rangeLabel}-এ জমা অর্ডারের ডেলিভার্ড মূল্য`} value={taka(o.revRange)} />
       </div>
 
       {/* চার্ট: ভিজিটর + অর্ডার */}

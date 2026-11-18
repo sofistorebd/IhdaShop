@@ -118,6 +118,23 @@ export default function OrdersTable({ initialOrders, pagination, steadfastReady,
     finally { setBusy(null); refreshOrders(); }
   }
 
+  async function recordSettlement(order) {
+    const amount = window.prompt("কুরিয়ারের স্টেটমেন্টে এই অর্ডারের জন্য পাওয়া টাকা (৳)", "");
+    if (amount === null || !/^\d+$/.test(amount.trim())) return;
+    const reference = window.prompt("কুরিয়ারের পেমেন্ট রেফারেন্স");
+    if (!reference?.trim()) return;
+    setBusy(order.id);
+    try {
+      const res = await fetch("/api/admin/settlements", {
+        method: "POST", headers: { "Content-Type": "application/json", "x-admin-action": "record-settlement" },
+        body: JSON.stringify({ id: order.id, amount: Number(amount), reference: reference.trim() }),
+      });
+      const data = await res.json();
+      setMsg(data.ok ? "কুরিয়ার পেমেন্ট সেভ হয়েছে।" : data.error);
+    } catch { setMsg("কুরিয়ার পেমেন্ট সেভ হয়নি।"); }
+    finally { setBusy(null); refreshOrders(); }
+  }
+
   function toggle(id) {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -456,7 +473,10 @@ export default function OrdersTable({ initialOrders, pagination, steadfastReady,
                     </p>
                     <p className="text-xs text-gray-400">{o.area}</p>
                   </td>
-                  <td className="px-4 py-3 font-semibold text-ink">{bdt(o.total)}</td>
+                  <td className="px-4 py-3 font-semibold text-ink">{bdt(o.total)}
+                    {o.settled_amount != null ? <p className="text-xs">প্রাপ্ত {bdt(o.settled_amount)} · {o.settlement_ref}</p>
+                      : o.status === "delivered" && <button disabled={actionsBusy} className="block text-xs underline" onClick={() => recordSettlement(o)}>কুরিয়ার পেমেন্ট লিখুন</button>}
+                  </td>
                   <td className="px-4 py-3">
                     {o.checkout && <p className="mb-1 text-xs text-gray-500">Meta: {({ waiting: "যাচাই বাকি", queued: "পাঠানোর অপেক্ষায়", sent: "পাঠানো হয়েছে", failed: "পাঠানো ব্যর্থ — CAPI সেটিংস দেখুন" })[o.checkout.purchase_state]}</p>}
                     <select

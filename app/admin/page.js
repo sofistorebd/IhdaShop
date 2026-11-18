@@ -45,11 +45,13 @@ export default async function AdminPage({ searchParams }) {
           <Banner>ℹ️ Steadfast API key সেট করা নেই — সেটিংসে যোগ করুন।</Banner>
         )}
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <StatCard icon="🧾" label="মোট অর্ডার" value={bn(stats.total)} tone="ink" />
           <StatCard icon="⏳" label="পেন্ডিং" value={bn(stats.pending)} tone="amber" />
           <StatCard icon="🚚" label="কুরিয়ারে" value={bn(stats.sent)} tone="green" />
-          <StatCard icon="💰" label="মোট বিক্রি" value={bdt(stats.revenue)} tone="brand" />
+          <StatCard icon="💰" label="ডেলিভারি হওয়া অর্ডারের মূল্য" value={bdt(stats.revenue)} tone="brand" />
+          <StatCard label="চলমান অর্ডারের মূল্য" value={bdt(stats.openValue)} tone="amber" />
+          <StatCard label="কুরিয়ারের হিসাবে প্রাপ্ত টাকা" value={bdt(stats.settled)} tone="green" />
         </div>
 
         <div className="mt-6">

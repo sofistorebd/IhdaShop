@@ -34,8 +34,8 @@ async function database(rows = fixtures) {
   const db = await load("lib/db.js", { postgres: () => async (parts, ...values) => {
     const text = parts.join("?").replace(/\s+/g, " ").trim();
     queries.push({ text, values });
-    if (text.startsWith("CREATE TABLE IF NOT EXISTS")) return [];
-    if (text === "SELECT status, count(*) AS count, COALESCE(sum(total), 0) AS revenue FROM orders GROUP BY status") {
+    if (text.startsWith("ALTER TABLE") || text.startsWith("CREATE TABLE IF NOT EXISTS")) return [];
+    if (text === "SELECT status, count(*) AS count, COALESCE(sum(total), 0) AS revenue, COALESCE(sum(settled_amount), 0) AS settled FROM orders GROUP BY status") {
       const groups = new Map();
       for (const row of rows) {
         const group = groups.get(row.status) || { status: row.status, count: 0, revenue: 0 };
@@ -60,12 +60,12 @@ test("dashboard counts all 331 verified orders, excluding all 120 review orders"
   assert.equal(result.stats.total, 331);
   assert.equal(result.stats.pending, 230);
   assert.equal(result.stats.sent, 1);
-  assert.equal(result.stats.revenue, 33100);
+  assert.equal(result.stats.revenue, 10000);
   assert.equal(result.pagination.counts.inreview, 120);
   assert.equal(result.pagination.counts.delivered, 100);
   assert.equal(result.orders.length, 50);
   assert.equal(result.pagination.totalPages, 5);
-  assert.equal(queries.filter((q) => !q.text.startsWith("CREATE")).length, 2);
+  assert.equal(queries.filter((q) => q.text.startsWith("SELECT")).length, 2);
   assert.ok(queries.every((q) => !/DELETE|UPDATE|DROP|TRUNCATE/.test(q.text)));
 });
 
@@ -89,7 +89,7 @@ test("review tab fetches only review orders and does not change overall revenue"
   const result = await db.getOrderDashboard({ status: "inreview", page: "3" });
   assert.equal(result.orders.length, 20);
   assert.ok(result.orders.every((o) => o.status === "inreview"));
-  assert.equal(result.stats.revenue, 33100);
+  assert.equal(result.stats.revenue, 10000);
 });
 
 test("invalid query parameters are safe and excessive pages clamp to last page", async () => {
