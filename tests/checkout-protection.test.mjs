@@ -175,3 +175,86 @@ test("Turnstile validates server-side hostname/action and fails closed", async (
 test("checkout body size is bounded before JSON parsing", async () => {
   await assert.rejects(security.readCheckoutJson(new Request("https://shop.test/api/order", { method: "POST", body: "x".repeat(17000) })), (e) => e.status === 413);
 });
+
+test("one OTP proof can commit exactly one new order, including retries", async () => {
+  const c = context({ otpHash: randomUUID() });
+  const first = await checkout.createProtectedOrder(order, c, {});
+  assert.equal((await checkout.createProtectedOrder(order, c, {})).order.id, first.order.id);
+  await assert.rejects(checkout.createProtectedOrder(order, context({ otpHash: c.otpHash }), {}), e => e.code === "otp_required");
+});
+
+test("dispatch claims, ambiguous bookings and manual reconciliation", async () => {
+  let calls = 0, fail = false;
+  const dispatch = await loadModule("lib/dispatch.js", { "./db": db, "./steadfast": {
+    createConsignment: async () => { calls++; if (fail) throw Error(); return { consignment_id: "123", tracking_code: "ABC" }; },
+  } });
+  const id = (await db.createOrder(order)).id;
+  for (const status of ["inreview", "cancelled", "delivered"]) {
+    await db.updateOrderStatus(id, status);
+    await assert.rejects(dispatch.dispatchOrder(id));
+  }
+  assert.equal(calls, 0);
+  await db.updateOrderStatus(id, "confirmed");
+  fail = true;
+  await assert.rejects(dispatch.dispatchOrder(id));
+  await assert.rejects(dispatch.dispatchOrder(id));
+  assert.equal(calls, 1);
+  assert.equal(await dispatch.reconcileDispatch(id, null, null), false);
+  await pg.query("UPDATE orders SET dispatch_started_at=now()-interval '6 minutes' WHERE id=$1", [id]);
+  assert.equal(await dispatch.reconcileDispatch(id, null, null), true);
+  fail = false;
+  await Promise.allSettled([dispatch.dispatchOrder(id), dispatch.dispatchOrder(id)]);
+  assert.equal(calls, 2);
+  assert.equal((await db.getOrder(id)).consignment_id, "123");
+});
+
+test("sessions expire, log out individually and all revoke on password change", async () => {
+  const auth = await loadModule("lib/auth.js", { "./db": db });
+  const credentials = await loadModule("lib/admin-auth.js", { "./db": db, "./auth": auth }, {
+    process: { env: { ADMIN_PASSWORD: "initial-password" } },
+  });
+  const a = await credentials.loginAdmin("initial-password"), b = await credentials.loginAdmin("initial-password");
+  assert.notEqual(a, b);
+  assert.equal(await auth.validSession(a), true);
+  await auth.revokeSession(a);
+  assert.equal(await auth.validSession(a), false);
+  assert.equal(await auth.validSession(b), true);
+  assert.equal(await credentials.changePassword("initial-password", "changed-password"), true);
+  assert.equal(await auth.validSession(b), false);
+  assert.equal(await credentials.loginAdmin("initial-password"), null);
+  const c = await credentials.loginAdmin("changed-password");
+  await pg.query("UPDATE admin_sessions SET expires_at=now()-interval '1 second'");
+  assert.equal(await auth.validSession(c), false);
+});
+
+test("OTP is optional, approves the matching phone/session, and throttles resends", async () => {
+  let enabled = false, calls = 0;
+  const sid = "VE" + "a".repeat(32);
+  const phone = "01712345678";
+  const cookie = security.sessionCookie();
+  const route = await loadModule("app/api/checkout/otp/route.js", {
+    "@/lib/db": db, "@/lib/checkout-db": checkout, "@/lib/checkout-security": security,
+    "@/lib/settings": { getCheckoutConfiguration: async () => ({ otpEnabled: enabled, publicUrl: "https://shop.test" }) },
+  }, { fetch: async (url, options) => {
+    calls++;
+    const sending = url.endsWith("/Verifications");
+    return Response.json({ sid, to: "+88" + phone, status: sending ? "pending" : options.body.get("Code") === "123456" ? "approved" : "pending" });
+  } });
+  async function request(data, session = cookie) {
+    const req = new Request("https://shop.test/api/checkout/otp", { method: "POST", headers: { origin: "https://shop.test" }, body: JSON.stringify({ phone, ...data }) });
+    req.cookies = { get: () => ({ value: session }) };
+    return route.POST(req);
+  }
+  assert.equal((await (await request({ action: "send" })).json()).disabled, true);
+  assert.equal(calls, 0);
+  enabled = true;
+  const sent = await (await request({ action: "send" })).json();
+  assert.ok(sent.ticket);
+  assert.equal((await request({ action: "send" })).status, 429);
+  assert.equal((await request({ action: "check", ticket: sent.ticket, code: "111111" })).status, 400);
+  assert.equal((await request({ action: "check", ticket: sent.ticket, code: "123456" }, security.sessionCookie())).status, 400);
+  const proof = await (await request({ action: "check", ticket: sent.ticket, code: "123456" })).json();
+  const ctx = security.submissionContext({ cookies: { get: () => ({ value: cookie }) } }, {}, { phone });
+  assert.equal(security.readOtpTicket("approved", proof.ticket, ctx), sid);
+  assert.throws(() => security.readOtpTicket("approved", proof.ticket, { ...ctx, phoneHash: "different" }));
+});

@@ -42,6 +42,10 @@ export default function OrderForm({ product, settings }) {
   const [securityAttempt, setSecurityAttempt] = useState(0);
   const [turnstileToken, setTurnstileToken] = useState("");
   const [challengeReset, setChallengeReset] = useState(0);
+  const [otpTicket, setOtpTicket] = useState("");
+  const [otpProof, setOtpProof] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpBusy, setOtpBusy] = useState(false);
   const [companyWebsite, setCompanyWebsite] = useState("");
 
   useEffect(() => {
@@ -84,6 +88,28 @@ export default function OrderForm({ product, settings }) {
     window.open(`https://wa.me/${site.whatsapp}?text=${msg}`, "_blank");
   }
 
+  async function requestOtp(action) {
+    const res = await fetch("/api/checkout/otp", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, phone: normalizePhone(phone), code: otpCode, ticket: otpTicket }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || "OTP সেবা লোড হয়নি।");
+    if (data.disabled) setSecurity(previous => ({ ...previous, otpEnabled: false }));
+    return data.ticket || "";
+  }
+
+  async function sendOtp() {
+    setOtpBusy(true);
+    setError("");
+    try {
+      setOtpTicket(await requestOtp("send"));
+      setOtpProof("");
+      setOtpCode("");
+    } catch (err) { setStatus("error"); setError(err.message); }
+    finally { setOtpBusy(false); }
+  }
+
   async function handleSubmit(e, allowRepeat = false) {
     e.preventDefault();
     if (submitting.current || !security) return;
@@ -117,13 +143,22 @@ export default function OrderForm({ product, settings }) {
       const current = previous?.fingerprint === fingerprint ? previous : { fingerprint, key: crypto.randomUUID() };
       attempt.current = current;
       try { sessionStorage.setItem(slot, JSON.stringify(current)); } catch { /* memory retry still works */ }
+      let proof = otpProof;
+      if (security.otpEnabled && !proof) {
+        proof = await requestOtp("check");
+        setOtpProof(proof);
+      }
       const res = await fetch("/api/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, requestKey: current.key, turnstileToken, companyWebsite, allowRepeat }),
+        body: JSON.stringify({ ...payload, otpProof: proof, requestKey: current.key, turnstileToken, companyWebsite, allowRepeat }),
       });
       const result = await res.json();
       if (!res.ok || !result.ok) {
+        if (result.code === "otp_required") {
+          setOtpProof(""); setOtpTicket(""); setOtpCode("");
+          setSecurityAttempt(n => n + 1);
+        }
         setDuplicate(result.code === "duplicate_order");
         if (result.code?.startsWith("verification_")) setSecurityAttempt((n) => n + 1);
         throw new Error(result.error || "অর্ডার জমা হয়নি। তথ্য যাচাই করে আবার চেষ্টা করুন।");
@@ -339,6 +374,7 @@ export default function OrderForm({ product, settings }) {
                 value={phone}
                 onChange={(e) => {
                   setPhone(e.target.value);
+                  setOtpCode(""); setOtpTicket(""); setOtpProof("");
                   if (phoneErr) setPhoneErr("");
                 }}
                 placeholder="মোবাইল নাম্বার (১১ ডিজিট, যেমন 01712345678)"
@@ -393,27 +429,36 @@ export default function OrderForm({ product, settings }) {
             </p>
           )}
 
+          {security?.otpEnabled && <div className="space-y-2">
+            <button type="button" className="rounded border px-4 py-2" disabled={otpBusy || status === "sending" || !validPhone(phone)} onClick={sendOtp}>
+              {otpBusy ? "পাঠানো হচ্ছে…" : otpTicket ? "OTP আবার পাঠান" : "এই নম্বরে OTP পাঠান"}
+            </button>
+            {otpTicket && <label className="block">SMS-এ পাওয়া কোড
+              <input className="ml-2 rounded border p-2" inputMode="numeric" autoComplete="one-time-code" value={otpCode}
+                onChange={e => setOtpCode(e.target.value.replace(/[০-৯]/g, c => String(c.charCodeAt(0) - 0x09e6)).replace(/\D/g, "").slice(0, 10))} />
+            </label>}
+          </div>}
           {security?.enabled && <TurnstileChallenge siteKey={security.siteKey} onToken={setTurnstileToken} resetKey={challengeReset} />}
           {securityError && <p role="alert" className="text-sm text-red-700">{securityError} <button type="button" className="underline" onClick={() => setSecurityAttempt((n) => n + 1)}>আবার লোড করুন</button></p>}
-          {duplicate && <button type="button" disabled={status === "sending" || !security || (security.enabled && !turnstileToken)}
+          {duplicate && <button type="button" disabled={otpBusy || (security?.otpEnabled && !otpProof && (!otpTicket || otpCode.length < 4)) || status === "sending" || !security || (security.enabled && !turnstileToken)}
             onClick={(e) => { if (window.confirm("আগের অর্ডারের পাশাপাশি সত্যিই আরেকটি নতুন অর্ডার করবেন?")) handleSubmit(e, true); }}
             className="w-full rounded-xl border border-amber-500 p-3 text-sm disabled:opacity-50">সত্যিই আরেকটি অর্ডার করতে চাই</button>}
 
           <button
             type="submit"
-            disabled={status === "sending" || !security || (security.enabled && !turnstileToken)}
+            disabled={otpBusy || (security?.otpEnabled && !otpProof && (!otpTicket || otpCode.length < 4)) || status === "sending" || !security || (security.enabled && !turnstileToken)}
             className="w-full rounded-full bg-brand py-3.5 text-base font-bold text-white shadow-md transition hover:bg-brand-dark disabled:opacity-60"
           >
             {status === "sending" ? "পাঠানো হচ্ছে..." : !security ? "অর্ডার সেবা লোড হচ্ছে..." : "অর্ডার কনফার্ম করুন"}
           </button>
 
-          <button
+          {security && !security.otpEnabled && <button
             type="button"
             onClick={orderViaWhatsApp}
             className="flex w-full items-center justify-center gap-2 rounded-full border border-green-500 py-3 text-base font-semibold text-green-600 transition hover:bg-green-50"
           >
             <span>📱</span> WhatsApp এ অর্ডার করুন
-          </button>
+          </button>}
         </form>
       </div>
     </section>

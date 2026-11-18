@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req) {
   try {
     const config = await getCheckoutConfiguration();
-    const response = NextResponse.json({ ok: true, enabled: config.enabled, siteKey: config.siteKey }, {
+    const response = NextResponse.json({ ok: true, enabled: config.enabled, otpEnabled: config.otpEnabled, siteKey: config.siteKey }, {
       headers: { "Cache-Control": "no-store", Vary: "Cookie" },
     });
     response.cookies.set("checkout_session", sessionCookie(req.cookies.get("checkout_session")?.value), {

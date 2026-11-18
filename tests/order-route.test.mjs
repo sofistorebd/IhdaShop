@@ -13,7 +13,7 @@ const form = await readFile(new URL("../components/OrderForm.jsx", import.meta.u
 const areas = form.match(/area: area === "inside" \? "([^"]+)" : "([^"]+)"/);
 assert.ok(areas, "Read delivery labels from the actual checkout payload");
 
-async function checkout(overrides = {}, { storageFails = false, replay = false, configFails = false, turnstile = false, limited = false } = {}) {
+async function checkout(overrides = {}, { storageFails = false, replay = false, configFails = false, turnstile = false, otpEnabled = false, limited = false } = {}) {
   const saved = [];
   const notices = [];
   const jobs = [];
@@ -47,7 +47,7 @@ async function checkout(overrides = {}, { storageFails = false, replay = false, 
       getSettings: async () => ({ delivery: { insideDhaka: 60, outsideDhaka: 120 } }),
       getCheckoutConfiguration: async () => {
         if (configFails) throw new Error("settings unavailable");
-        return { enabled: turnstile, siteKey: "site", secret: "secret", hostname: "shop.test", publicUrl: "https://shop.test" };
+        return { otpEnabled, enabled: turnstile, siteKey: "site", secret: "secret", hostname: "shop.test", publicUrl: "https://shop.test" };
       },
     },
   };
@@ -137,4 +137,10 @@ test("database failure is not reported as a successful order", async () => {
   assert.equal(result.status, 503);
   assert.equal(result.body.ok, false);
   assert.equal(result.notices.length, 0);
+});
+
+test("OTP-enabled checkout rejects an unverified direct order before saving", async () => {
+  const result = await checkout({}, { otpEnabled: true });
+  assert.equal(result.body.code, "otp_required");
+  assert.equal(result.saved.length, 0);
 });

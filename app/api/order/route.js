@@ -5,7 +5,7 @@ import { sendTelegram, formatOrder } from "@/lib/telegram";
 import { getProductBySlug } from "@/lib/products-db";
 import { getSettings, getCheckoutConfiguration } from "@/lib/settings";
 import { createProtectedOrder, findSubmission, limitCheckout } from "@/lib/checkout-db";
-import { attribution, CheckoutError, digest, normalizePhone, readCheckoutJson, submissionContext, validateTurnstile, validPhone } from "@/lib/checkout-security";
+import { readOtpTicket, attribution, CheckoutError, digest, normalizePhone, readCheckoutJson, submissionContext, validateTurnstile, validPhone } from "@/lib/checkout-security";
 
 export async function POST(req) {
   try {
@@ -104,6 +104,8 @@ async function receiveOrder(req) {
   const context = submissionContext(req, data, data);
   const replay = await findSubmission(context);
   if (replay) return Response.json({ ok: true, id: replay.order.id, replayed: true });
+  if (config.otpEnabled) context.otpHash = digest("otp-used", readOtpTicket("approved", data.otpProof, context));
+  delete data.otpProof;
   await limitCheckout(context);
   if (data.companyWebsite) throw new CheckoutError(400, "invalid_order", "অর্ডারের তথ্য যাচাই করে আবার চেষ্টা করুন।");
   await validateTurnstile(data.turnstileToken, config, context.ip);

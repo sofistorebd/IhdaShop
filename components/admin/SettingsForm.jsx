@@ -44,6 +44,7 @@ export default function SettingsForm({ initial }) {
     steadfastApiKey: "",
     steadfastSecretKey: "",
     capiAccessToken: "",
+    otpEnabled: String(Boolean(initial.otpEnabled)),
     turnstileEnabled: initial.turnstileEnabled ? "true" : "false",
     turnstileSiteKey: initial.turnstileSiteKey || "",
     turnstileSecretKey: "",
@@ -333,7 +334,11 @@ export default function SettingsForm({ initial }) {
       </Section>
 
       <Section title="অর্ডার সুরক্ষা">
-        <p className="text-sm text-gray-600">Duplicate submission ও অল্প সময়ে বারবার অর্ডারের সীমা চালু থাকবে। OTP এখনো যুক্ত হয়নি।</p>
+        <p className="text-sm text-gray-600">Duplicate submission ও অল্প সময়ে বারবার অর্ডারের সীমা চালু থাকবে।</p>
+        <label className="flex items-center gap-2">
+          <input type="checkbox" checked={f.otpEnabled === "true"} onChange={e => set("otpEnabled", String(e.target.checked))} />
+          প্রতিটি ওয়েব অর্ডারে SMS OTP যাচাই করুন (Twilio Verify)
+        </label>
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={f.turnstileEnabled === "true"} onChange={(e) => set("turnstileEnabled", String(e.target.checked))} />
           এই সাইটে Cloudflare Turnstile চালু করুন
